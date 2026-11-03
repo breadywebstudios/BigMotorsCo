@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>About · Big Motors Co.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="about.css">
+<script>try{if(!sessionStorage.getItem('bm-intro')&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('intro')}catch(e){}document.documentElement.classList.add('js')</script>
+</head>
+<body>
+
+<!-- Start lights intro (first visit per session) -->
+<div class="lights" id="lights" aria-hidden="true">
+  <div class="lamps"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="go-txt">Go</div>
+  <div class="skip">Click to skip</div>
+</div>
+
+<!-- Scroll HUD -->
+<div class="hud" id="hud" aria-hidden="true">
+  <svg viewBox="0 0 120 120">
+    <circle class="hud-track" cx="60" cy="60" r="50" pathLength="100"/>
+    <circle class="hud-fill" id="hud-fill" cx="60" cy="60" r="50" pathLength="100"/>
+  </svg>
+  <div class="hud-read"><b id="hud-speed">000</b><span>km/h</span></div>
+  <div class="hud-gear"><span>Gear</span><b id="hud-gear">N</b></div>
+  <div class="hud-nitro"><i id="hud-nitro"></i></div>
+</div>
+
+<header class="nav" id="nav">
+  <div class="topline">
+    <div class="wrap">
+      <span>Dubai · Abu Dhabi</span>
+      <span class="hide-sm">Collector &amp; performance cars</span>
+      <a href="#contact">Value my car →</a>
+    </div>
+  </div>
+  <div class="wrap bar">
+    <a class="mark" href="index.html" aria-label="Big Motors Co. home">
+      <img src="img/logo.png" alt="Big Motors Co." width="112" height="65">
+    </a>
+    <ul>
+      <li><a href="index.html#garage"><span>←</span>Inventory</a></li>
+      <li><a href="#origin"><span>01</span>Origin</a></li>
+      <li><a href="#results"><span>02</span>Results</a></li>
+      <li><a href="#marques"><span>03</span>Marques</a></li>
+      <li><a href="#provenance"><span>04</span>Provenance</a></li>
+      <li><a href="#sell"><span>06</span>Sell</a></li>
+    </ul>
+    <a class="btn red nitro" href="#contact"><span>Value my car</span></a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" id="hero">
+    <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="img/hero.jpg" aria-hidden="true">
+      <source src="1022.webm" type="video/webm">
+      <source src="1022.mp4" type="video/mp4">
+    </video>
+    <canvas class="streaks" id="streaks" aria-hidden="true"></canvas>
+    <div class="frame" aria-hidden="true"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+    <div class="wrap">
+      <div class="kicker light"><b>The Collector's Issue</b> Dubai · Abu Dhabi</div>
+      <h1>
+        <span class="ln"><span>A collector's</span></span>
+        <span class="ln"><span>business.</span></span>
+        <span class="ln"><em>Run like one.</em></span>
+      </h1>
+      <div class="hero-foot">
+        <p>Who we are, and how a car is sold through us. Written for the owner deciding who should represent his.</p>
+        <div class="ctas">
+          <a class="btn red nitro" href="#contact"><span>Tell us about the car</span> <span class="arr">→</span></a>
+          <a class="btn ghost" href="#sell"><span>Two ways to sell</span></a>
+        </div>
+      </div>
+    </div>
+    <a class="scroll-cue" href="#origin" aria-label="Scroll to content"><span></span></a>
+  </section>
+
+  <div class="strip" aria-label="Classics, Young Timers, Exotics, Porsche">
+    <div class="row" id="ticker" aria-hidden="true">
+      <span>Classics</span><span>Young Timers</span><span>Exotics</span><span>Porsche</span><span>Iconic Cars</span><span>Pure Emotions</span>
+      <span>Classics</span><span>Young Timers</span><span>Exotics</span><span>Porsche</span><span>Iconic Cars</span><span>Pure Emotions</span>
+    </div>
+  </div>
+
+  <!-- 01 ORIGIN -->
+  <section id="origin" class="sec">
+    <div class="wrap">
+      <header class="sec-head" data-reveal>
+        <div class="no"><b>01</b>Origin</div>
+        <div>
+          <div class="kicker">Where this comes from</div>
+          <h2>It started on the Autobahn.</h2>
+        </div>
+      </header>
+      <div class="article">
+        <div class="copy" data-reveal>
+          <p class="lede dropcap">Big Motors was started by someone who grew up in Germany, on roads with no speed limit, at an age when a 911 going past is an event.</p>
+          <p>The 964 and the 993 were the cars of that childhood. Ordinary traffic there. Never ordinary to him.</p>
+          <p>The first Porsche he bought himself was a 997 Turbo. Same shape, same badge, a long way from the roadside. That car is the reason this company exists.</p>
+          <p>Big Motors is a second business. The first is a consulting practice. This one was built out of the cars, and it is run by people who would own most of what passes through it.</p>
+          <ul class="models" aria-label="The cars of that childhood">
+            <li>964</li><li>993</li><li>997 Turbo</li>
+          </ul>
+        </div>
+        <figure class="fig" data-wipe>
+          <div class="ph"><img src="img/turbo.jpg" alt="White Porsche 997 Turbo in a studio garage" loading="lazy"></div>
+          <figcaption><b>Fig. 01</b> Porsche 997 Turbo. The car this company grew out of.</figcaption>
+        </figure>
+      </div>
+      <aside class="pull" data-reveal>
+        <blockquote>“Somebody who has to sell your car this month is not negotiating for you. <b>He is negotiating for himself.</b>”</blockquote>
+        <div class="why">
+          <h3>Why that matters to a seller</h3>
+          <p>We do not need your car to sell this month. There is no number set by somebody else, no quarter to close, and nothing here we would be embarrassed to stand next to. When we tell you what your car is worth, nothing on our side is pushing the figure.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 02 RESULTS -->
+  <section id="results" class="sec dark">
+    <div class="wrap">
+      <header class="sec-head" data-reveal>
+        <div class="no"><b>02</b>Results</div>
+        <div>
+          <div class="kicker">What representation is worth</div>
+          <h2>Same car. Same market. Presented right.</h2>
+          <p class="lede">The same car can make two very different numbers, and usually nothing about the car explains the gap. Two of the cars we have sold had already been through auction. Both failed there. Neither car was changed afterwards, and neither market moved.</p>
+        </div>
+      </header>
+      <div class="cases">
+        <article class="case tilt" data-reveal>
+          <div class="vs">Above the top auction bid</div>
+          <div class="num"><span data-count="57">57</span><sup>%</sup></div>
+          <h3>Porsche Cayenne 957 Dakar</h3>
+          <p>A full Zeus build, designed by its owner, and well known across the Porsche community online. Auction could not find the bidder. It came to us and sold a few months later at the full asking price, without a thing being done to the car.</p>
+        </article>
+        <article class="case tilt" data-reveal>
+          <div class="vs">Above the top auction bid</div>
+          <div class="num"><span data-count="86">86</span><sup>%</sup></div>
+          <h3>Porsche 911 2.0 Cup Edition</h3>
+          <p>A competition car carrying an FIA passport valid to 2031, which is the detail that decides who may buy it and what it is worth to them. Auction went as far as it was going to go. We sold it a few weeks later, to a buyer who understood the passport.</p>
+        </article>
+      </div>
+
+      <div class="scale" data-reveal role="img" aria-label="Scale from 0 to 100 percent above top auction bid. Expected range 30 to 40 percent. Achieved results: 57 and 86 percent.">
+        <div class="scale-head">
+          <h3>What we tell a seller to expect</h3>
+          <div class="legend"><span><i class="l1"></i>Expected: 30–40% over top bid</span><span><i class="l2"></i>Achieved</span></div>
+        </div>
+        <div class="track" aria-hidden="true">
+          <div class="rail"></div>
+          <div class="band-exp" style="left:30%;width:10%"></div>
+          <div class="pin" style="left:57%" data-l="Dakar +57%"></div>
+          <div class="pin" style="left:86%" data-l="Cup +86%"></div>
+          <span class="tick" style="left:0%">0</span><span class="tick" style="left:25%">25%</span><span class="tick" style="left:50%">50%</span><span class="tick" style="left:75%">75%</span><span class="tick" style="left:100%">100%</span>
+        </div>
+        <p class="muted">Neither of those is what we promise. Thirty to forty per cent above the highest bid a car reached at auction is the range we tell a seller to expect, and we would rather beat it than advertise it.</p>
+      </div>
+
+      <p class="closing" data-reveal>Seven days online or a minute under the hammer, an auction ends on the date it set. <span>We go looking for the buyer who was never in that room.</span></p>
+    </div>
+  </section>
+
+  <figure class="band" data-wipe>
+    <div class="ph"><img src="img/auction.jpg" alt="Black Porsche Cayenne 957 Dakar rally build beside an orange classic Porsche 911" loading="lazy"></div>
+    <figcaption class="wrap"><b>Fig. 02</b> Cayenne 957 Dakar and 911 2.0. Both failed at auction. Both sold through us.</figcaption>
+  </figure>
+
+  <!-- 03 MARQUES -->
+  <section id="marques" class="sec">
+    <div class="wrap">
+      <header class="sec-head" data-reveal>
+        <div class="no"><b>03</b>Marques</div>
+        <div>
+          <div class="kicker">What we deal in</div>
+          <h2>Cars with a story worth telling.</h2>
+          <p class="lede">Not every car that has value, but every car that has character. Each one chosen because age, condition, rarity and real demand line up in the right way.</p>
+        </div>
+      </header>
+      <div class="cards">
+        <article class="card tilt" data-reveal>
+          <div class="ph"><img src="img/gt1.jpg" alt="Rear wing of a Porsche 911 GT1" loading="lazy" style="object-position:center 60%"></div>
+          <div class="body">
+            <div class="cat">Where we live</div>
+            <h3>Porsche</h3>
+            <p>From the 356 to the 992, the Carrera GT to the 918, and every GT car in between. The legends we know by heart.</p>
+          </div>
+        </article>
+        <article class="card tilt" data-reveal>
+          <div class="ph"><img src="img/rolls.jpg" alt="Rolls-Royce in a showroom" loading="lazy"></div>
+          <div class="body">
+            <div class="cat">Long journeys, long ownership</div>
+            <h3>Grand Touring &amp; Luxury</h3>
+            <p>Aston Martin up to the DB9. Bentley Arnage, Azure, Brooklands. Rolls-Royce to 2002.</p>
+          </div>
+        </article>
+        <article class="card tilt" data-reveal>
+          <div class="ph"><img src="img/trio.jpg" alt="A Porsche 993, an Aston Martin DBS and a Rolls-Royce Silver Spur lined up in a lit showroom" loading="lazy"></div>
+          <div class="body">
+            <div class="cat">The generation now collecting</div>
+            <h3>Classics &amp; Young Timers</h3>
+            <p>A generation grew up wanting these and is now collecting them. We know which examples are worth pursuing and which have been round the block too often.</p>
+          </div>
+        </article>
+        <article class="card tilt" data-reveal>
+          <div class="ph"><img src="img/hero.jpg" alt="A collage of performance cars including a Porsche GT2 RS" loading="lazy" style="object-position:70% center"></div>
+          <div class="body">
+            <div class="cat">What enthusiasts chase</div>
+            <h3>Exotics &amp; Enthusiast Cars</h3>
+            <p>Ferrari and Lamborghini. Purist BMW M like the E30 M3 and the E46 CSL, and the hand-built pre-merger AMG Hammers.</p>
+          </div>
+        </article>
+      </div>
+      <p class="closing" data-reveal>If it matters to a serious buyer, <span>it matters to us.</span></p>
+    </div>
+  </section>
+
+  <figure class="band" data-wipe>
+    <div class="ph"><img src="img/dbs.jpg" alt="Grey Aston Martin DBS in a studio garage" loading="lazy"></div>
+    <figcaption class="wrap"><b>Fig. 03</b> Aston Martin DBS · 2009 · Manual V12. Still with us.</figcaption>
+  </figure>
+
+  <!-- 04 PROVENANCE -->
+  <section id="provenance" class="sec">
+    <div class="wrap">
+      <header class="sec-head" data-reveal>
+        <div class="no"><b>04</b>Provenance</div>
+        <div>
+          <div class="kicker">What has passed through</div>
+          <h2>We started with the ones nobody could get.</h2>
+          <p class="lede">We started with GT3 RS and GT2 RS, at the point when they were the hardest cars in the world to buy. More than a dozen went through the business, one of them with no air conditioning and full racing specification, sold here in the Gulf. That is how this began. It did not stay there.</p>
+        </div>
+      </header>
+
+      <div class="ledger" data-reveal>
+        <div class="lh"><span>#</span><span>Marque</span><span>Model</span><span>Note</span></div>
+        <div class="r"><span class="ix">01</span><span class="mk">Porsche</span><span class="md">Carrera GT</span><span class="nt">Delivery kilometres</span></div>
+        <div class="r"><span class="ix">02</span><span class="mk">Porsche</span><span class="md">GT2 RS · Miami Blue</span><span class="nt">Zero kilometres</span></div>
+        <div class="r"><span class="ix">03</span><span class="mk">Bentley</span><span class="md">Arnage Le Mans Series</span><span class="nt">Close to delivery kilometres</span></div>
+        <div class="r"><span class="ix">04</span><span class="mk">Rolls-Royce</span><span class="md">Silver Spur · 1996</span><span class="nt">10,000 km, as it left the factory</span></div>
+        <div class="r"><span class="ix">05</span><span class="mk">BMW</span><span class="md">E31 Alpina</span><span class="nt">Manual</span></div>
+        <div class="r"><span class="ix">06</span><span class="mk">BMW</span><span class="md">M5 CS</span><span class="nt">About as few km as the model comes</span></div>
+        <div class="r"><span class="ix">07</span><span class="mk">Mercedes-Benz</span><span class="md">SL 600 · R129</span><span class="nt">A great many of them</span></div>
+        <div class="r still"><span class="ix">08</span><span class="mk">Aston Martin</span><span class="md">DBS · 2009 · Manual V12</span><span class="nt">Delivery km · still with us</span></div>
+        <div class="r"><span class="ix">09</span><span class="mk">Porsche</span><span class="md">911 · Every generation</span><span class="nt">Continuously</span></div>
+      </div>
+
+      <div class="gt1" data-reveal>
+        <div class="count">~<span data-count="25">25</span><small>Road cars built</small></div>
+        <div>
+          <p>We brokered a 911 GT1 Straßenversion, one of about twenty-five road cars Porsche built to homologate the racer.</p>
+          <p>The work is never finding the car. It is finding the one collector in the world who can buy it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSPECTION -->
+  <section id="inspection" class="sec tint">
+    <div class="wrap">
+      <header class="sec-head" data-reveal>
+        <div class="no"><b>05</b>Inspection</div>
+        <div>
+          <div class="kicker">How a car is represented</div>
+          <h2>We know what to look for.</h2>
+          <p class="lede">Years of buying, selling and inspecting in this market produce a clear picture of what a good example looks like, and what a well presented one looks like. They are not always the same thing.</p>
+        </div>
+      </header>
+      <div class="two">
+        <div data-reveal>
+          <h3>The inspection</h3>
+          <ul class="checklist">
+            <li><span><b>Paint thickness</b> on every panel.</span></li>
+            <li><span><b>Service history</b> read for what is missing, not only for what is there.</span></li>
+            <li><span><b>Options</b> checked against what should be present for the production year and the specification.</span></li>
+            <li><span><b>Matching numbers</b>, checked across the car.
+              <span class="numbers"><span>Chassis</span><span>Engine</span><span>Gearbox</span><span>Colour</span><span>Trim</span></span></span></li>
+          </ul>
+        </div>
+        <div data-reveal>
+          <h3>The presentation</h3>
+          <ul class="checklist">
+            <li><span><b>Photography</b> that shows the car as it is.</span></li>
+            <li><span><b>A written description</b> that explains the car rather than lists it.</span></li>
+            <li><span><b>Private first.</b> It goes to buyers we already know before it goes anywhere public.</span></li>
+            <li><span><b>Every enquiry qualified</b> before anybody stands next to it.</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="truth" data-reveal>
+        <div class="early"><div class="k">Disclosed early</div><p>A flaw is a negotiation.</p></div>
+        <div class="late"><div class="k">Found later</div><p>The same flaw is a collapsed deal.</p></div>
+      </div>
+      <p class="closing" data-reveal>We say what is true about a car even when it costs us the quick sale. <span>We represent every car with the same honesty we would want if we were the buyer.</span></p>
+    </div>
+  </section>
+
+  <figure class="band" data-wipe>
+    <div class="ph"><img src="img/pair.jpg" alt="Silver Porsche 997 Turbo parked beside a BMW 8 Series in an underground garage" loading="lazy"></div>
+    <figcaption class="wrap"><b>Fig. 04</b> 997 Turbo and BMW 8 Series. Two routes to a sale.</figcaption>
+  </figure>
+
+  <!-- SELL -->
+  <section id="sell" class="sec">
+    <div class="wrap">
+      <header class="sec-head" data-reveal>
+        <div class="no"><b>06</b>Sell</div>
+        <div>
+          <div class="kicker">Two ways to sell</div>
+          <h2>Two options. Whichever works for you.</h2>
+        </div>
+      </header>
+      <div class="routes">
+        <article class="route tilt" data-reveal>
+          <div class="k">Route A · Done and finished</div>
+          <h3>We buy the car</h3>
+          <p>An honest offer against the car and the market as it stands today. We agree a price and we proceed.</p>
+          <ul><li>No viewings</li><li>No strangers</li><li>No waiting</li></ul>
+        </article>
+        <article class="route rep tilt" data-reveal>
+          <div class="k">Route B · The higher number</div>
+          <h3>We represent it</h3>
+          <p>If you are not in a hurry, representation is the stronger route. The car stays with us. We present it, find the buyer and manage everything through to handover.</p>
+          <ul><li>Car stays with us</li><li>We find the buyer</li><li>Through to handover</li></ul>
+        </article>
+      </div>
+      <div class="carry" data-reveal>
+        <div class="zero">AED <span data-count="0">0</span><small>Upfront cost to a seller</small></div>
+        <div>
+          <h3>What we carry</h3>
+          <p class="muted">Photography, the write-up, every listing and platform fee, paid promotion, enquiry handling, viewings and negotiation. Commission, timing and payment are set out in full in the seller pack.</p>
+          <p class="fair">Fair to the seller. Fair to the buyer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="sec contact dark">
+    <div class="bg" aria-hidden="true"></div>
+    <div class="wrap">
+      <div class="two">
+        <div data-reveal>
+          <div class="no light"><b>07</b>Contact</div>
+          <div class="kicker light">The next step</div>
+          <h2>Tell us about the car.</h2>
+          <p class="lede">Send the model, the year, the mileage and whatever photographs you have. You get an honest assessment and an indicative range within twenty-four hours.</p>
+          <div class="promise"><span>Nothing signed</span><span>No obligation</span><span>If we are not the right home, we will say so</span></div>
+        </div>
+        <form id="enq" novalidate data-reveal>
+          <div class="fr">
+            <label for="f-model">Model<input id="f-model" name="model" placeholder="e.g. Porsche 993 Carrera 4S" required></label>
+            <label for="f-year">Year<input id="f-year" name="year" inputmode="numeric" placeholder="e.g. 1997"></label>
+          </div>
+          <div class="fr">
+            <label for="f-km">Mileage (km)<input id="f-km" name="km" inputmode="numeric" placeholder="e.g. 42,000"></label>
+            <label for="f-route">I'm interested in
+              <select id="f-route" name="route">
+                <option>Not sure yet</option>
+                <option>You buy the car</option>
+                <option>You represent it</option>
+              </select>
+            </label>
+          </div>
+          <label for="f-notes">Anything we should know<textarea id="f-notes" name="notes" placeholder="History, options, condition, location"></textarea></label>
+          <button class="btn red nitro" type="submit"><span>Send on WhatsApp</span> <span class="arr">→</span></button>
+          <p class="formnote" id="f-note">Opens WhatsApp with your details filled in. Attach your photographs there.</p>
+        </form>
+      </div>
+
+      <div class="channels">
+        <div><div class="k">WhatsApp</div><div class="v"><span id="wa-num">+971 50 668 6691</span><button class="copy-btn" type="button" data-copy="+971506686691">Copy</button></div></div>
+        <div><div class="k">Instagram</div><a class="v" href="https://www.instagram.com/bigmotorsco/" target="_blank" rel="noopener">@bigmotorsco</a></div>
+        <div><div class="k">Online</div><a class="v" href="https://www.bigmotors.co" target="_blank" rel="noopener">bigmotors.co</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="top">
+      <div class="tagline">Iconic Cars.<br><span>Pure Emotions.</span></div>
+      <div class="foot-side">
+        <img src="img/logo.png" alt="Big Motors Co." width="112" height="65">
+        <p class="meta">Big Motors Co. Dubai and Abu Dhabi. Collector and performance cars, bought, represented and sold properly.</p>
+      </div>
+    </div>
+    <nav class="foot-nav" aria-label="Footer">
+      <a href="#origin">Origin</a><a href="#results">Results</a><a href="#marques">Marques</a><a href="#provenance">Provenance</a><a href="#inspection">Inspection</a><a href="#sell">Sell</a><a href="#contact">Contact</a>
+    </nav>
+    <div class="base">
+      <span>© <span id="yr">2026</span> Big Motors Co.</span>
+      <a href="https://breadywebstudio.vercel.app" target="_blank" rel="noopener">Powered by Bready Web Studios</a>
+    </div>
+  </div>
+</footer>
+
+<script src="about.js"></script>
+</body>
+</html>

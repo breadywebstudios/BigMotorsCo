@@ -2,99 +2,202 @@
   var root=document.documentElement;
   var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   var finePointer=matchMedia('(hover: hover) and (pointer: fine)').matches;
+  var CARS=window.CARS||[];
   var hero=document.getElementById('hero');
+  function $(id){return document.getElementById(id)}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 
   // Hero video: some browsers block autoplay until play() is called explicitly
   var hv=document.querySelector('.hero-video');
   if(hv){hv.muted=true;var p=hv.play();if(p&&p.catch)p.catch(function(){})}
 
   // ---------- Start lights intro ----------
-  function startHero(){hero.classList.add('go')}
-  var lights=document.getElementById('lights');
-  if(root.classList.contains('intro')){
+  function startHero(){if(hero)hero.classList.add('go')}
+  var lights=$('lights');
+  if(lights&&root.classList.contains('intro')){
     var lamps=lights.querySelectorAll('.lamps i'),timers=[],done=false;
-    function launch(){
+    var launch=function(){
       if(done)return;done=true;
       timers.forEach(clearTimeout);
       lights.classList.add('launch');
       try{sessionStorage.setItem('bm-intro','1')}catch(e){}
       setTimeout(startHero,150);
       setTimeout(function(){root.classList.remove('intro')},560);
-    }
-    lamps.forEach(function(l,i){timers.push(setTimeout(function(){l.classList.add('on')},300+i*280))});
-    timers.push(setTimeout(function(){lights.classList.add('go')},300+lamps.length*280+350));
-    timers.push(setTimeout(launch,300+lamps.length*280+750));
+    };
+    lamps.forEach(function(l,i){timers.push(setTimeout(function(){l.classList.add('on')},250+i*240))});
+    timers.push(setTimeout(function(){lights.classList.add('go')},250+lamps.length*240+300));
+    timers.push(setTimeout(launch,250+lamps.length*240+650));
     lights.addEventListener('click',launch);
     addEventListener('keydown',launch,{once:true});
   }else{
+    root.classList.remove('intro');
     requestAnimationFrame(startHero);
   }
 
-  // ---------- Nav ----------
-  var nav=document.getElementById('nav');
-  function onScroll(){nav.classList.toggle('solid',scrollY>40)}
-  onScroll();addEventListener('scroll',onScroll,{passive:true});
+  // ---------- Reveal + slash-wipe ----------
+  var io='IntersectionObserver' in window?new IntersectionObserver(function(es){
+    var batch=0;
+    es.forEach(function(e){
+      if(!e.isIntersecting)return;
+      if(!reduce)e.target.style.transitionDelay=(batch++*0.08)+'s';
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    });
+  },{threshold:.12,rootMargin:'0px 0px -5% 0px'}):null;
+  function observe(el){if(io)io.observe(el);else el.classList.add('in')}
+  document.querySelectorAll('[data-reveal],[data-wipe]').forEach(observe);
 
-  var sections=[].slice.call(document.querySelectorAll('main section[id]'));
-  var navLinks=document.querySelectorAll('.nav ul a');
-  var currentGear=0;
-
-  // ---------- Reveal, wipe, count-up ----------
-  function countUp(el){
-    var target=+el.getAttribute('data-count');
-    if(reduce){el.textContent=target;return}
-    var from=target===0?999:0,t0=null,dur=1400;
-    function step(t){
-      if(!t0)t0=t;
-      var k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,4);
-      el.textContent=Math.round(from+(target-from)*e);
-      if(k<1)requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
+  // ---------- Card tilt + glare ----------
+  function bindTilt(el){
+    if(!finePointer||reduce)return;
+    var g=document.createElement('span');g.className='glare';el.appendChild(g);
+    el.addEventListener('pointerenter',function(){el.style.transition='transform .15s ease-out, box-shadow .3s'});
+    el.addEventListener('pointermove',function(e){
+      var r=el.getBoundingClientRect(),px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;
+      el.style.transform='perspective(900px) rotateX('+((.5-py)*6).toFixed(2)+'deg) rotateY('+((px-.5)*8).toFixed(2)+'deg)';
+      el.style.setProperty('--gx',(px*100)+'%');el.style.setProperty('--gy',(py*100)+'%');
+    });
+    el.addEventListener('pointerleave',function(){el.style.transition='transform .6s cubic-bezier(.2,.8,.2,1), box-shadow .3s';el.style.transform=''});
   }
-  if('IntersectionObserver' in window){
-    var io=new IntersectionObserver(function(es){
-      var batch=0;
-      es.forEach(function(e){
-        if(!e.isIntersecting)return;
-        var el=e.target;
-        if(!reduce)el.style.transitionDelay=(batch++*0.09)+'s';
-        el.classList.add('in');
-        el.querySelectorAll('[data-count]').forEach(countUp);
-        io.unobserve(el);
-      });
-    },{threshold:.15,rootMargin:'0px 0px -6% 0px'});
-    document.querySelectorAll('[data-reveal],[data-wipe]').forEach(function(el){io.observe(el)});
 
-    var so=new IntersectionObserver(function(es){
-      es.forEach(function(e){
-        if(!e.isIntersecting)return;
-        var id=e.target.id;
-        currentGear=sections.indexOf(e.target);
-        navLinks.forEach(function(a){a.classList.toggle('active',a.getAttribute('href')==='#'+id)});
+  // ---------- Car card ----------
+  function cardHTML(c){
+    var manual=/manual/i.test(c.gearbox);
+    return '<a class="car tilt" data-wipe href="car.html?c='+c.id+'">'+
+      '<div class="ph"><img src="'+carImg(c,c.cover,true)+'" alt="'+esc(c.year+' '+c.make+' '+c.model)+'" loading="lazy">'+
+      '<span class="yr">'+c.year+'</span>'+(manual?'<span class="tag">Manual</span>':'')+
+      '<span class="price">'+fmtPrice(c.price)+'</span><span class="select">Select ▶</span></div>'+
+      '<div class="body"><div class="mk">'+esc(c.make)+'</div><h3>'+esc(c.model)+'</h3><div class="sub">'+esc(c.sub)+'</div>'+
+      '<div class="specs"><span>'+c.year+'</span><span>'+fmtMiles(c)+'</span><span>'+esc(c.gearbox)+'</span></div></div></a>';
+  }
+  function mountCards(container,list){
+    container.innerHTML=list.length?list.map(cardHTML).join(''):'<p class="empty">No cars match. Try another filter.</p>';
+    container.querySelectorAll('.car').forEach(function(el){bindTilt(el);observe(el)});
+  }
+
+  // ---------- Catalog page ----------
+  var grid=$('grid');
+  if(grid){
+    var FILTERS=[
+      {k:'all',label:'All',f:function(){return true}},
+      {k:'porsche',label:'Porsche',f:function(c){return c.make==='Porsche'}},
+      {k:'mercedes',label:'Mercedes-Benz',f:function(c){return c.make==='Mercedes-Benz'}},
+      {k:'american',label:'American',f:function(c){return c.make==='Cadillac'||c.make==='Chevrolet'}},
+      {k:'classic',label:'Classics',f:function(c){return c.year<1990}},
+      {k:'youngtimer',label:'Youngtimers',f:function(c){return c.year>=1990&&c.year<2010}},
+      {k:'modern',label:'2010 +',f:function(c){return c.year>=2010}},
+      {k:'manual',label:'Manual',f:function(c){return /manual/i.test(c.gearbox)}}
+    ];
+    var SORTS={
+      featured:function(){return 0},
+      'price-asc':function(a,b){return a.price-b.price},
+      'price-desc':function(a,b){return b.price-a.price},
+      'year-asc':function(a,b){return a.year-b.year},
+      'year-desc':function(a,b){return b.year-a.year}
+    };
+    var state={f:'all',s:'featured'};
+    try{var saved=JSON.parse(sessionStorage.getItem('bm-garage')||'null');if(saved)state=saved}catch(e){}
+    var filters=$('filters'),sortSel=$('sort'),count=$('result-count');
+    filters.innerHTML=FILTERS.map(function(f){
+      var n=CARS.filter(f.f).length;
+      return n?'<button class="chip" type="button" data-k="'+f.k+'" aria-pressed="false"><span>'+f.label+'</span><small>'+n+'</small></button>':'';
+    }).join('');
+    sortSel.value=state.s;
+    var render=function(){
+      var f=FILTERS.filter(function(x){return x.k===state.f})[0]||FILTERS[0];
+      var list=CARS.filter(f.f).slice().sort(SORTS[state.s]||SORTS.featured);
+      filters.querySelectorAll('.chip').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.k===f.k))});
+      count.textContent=list.length+(list.length===1?' car':' cars')+(f.k==='all'?' in stock':' · '+f.label);
+      mountCards(grid,list);
+      try{sessionStorage.setItem('bm-garage',JSON.stringify(state))}catch(e){}
+    };
+    filters.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;state.f=b.dataset.k;render()});
+    sortSel.addEventListener('change',function(){state.s=sortSel.value;render()});
+    render();
+    var sc=$('stock-count');if(sc)sc.textContent=CARS.length+' in stock';
+  }
+
+  // ---------- Car detail page ----------
+  var stage=$('stage');
+  if(stage){
+    var id=new URLSearchParams(location.search).get('c');
+    var idx=Math.max(0,CARS.findIndex(function(c){return c.id===id}));
+    var car=CARS[idx];
+    document.title=car.year+' '+car.make+' '+car.model+' · Big Motors Co.';
+    $('crumb').textContent=car.make;
+
+    var specs=[['Year',car.year],['Mileage',fmtMiles(car)],['Gearbox',car.gearbox],['Engine',car.engine],['Power',car.power],['Drive',car.drive],['Colour',car.colour],['Spec',car.spec]]
+      .filter(function(s){return s[1]});
+    var msg='Hello Big Motors, I am interested in the '+car.year+' '+car.make+' '+car.model+' ('+fmtPrice(car.price)+').';
+    if(/^https?:/.test(location.href))msg+=' '+location.href;
+    $('panel').innerHTML=
+      '<div><div class="kicker">'+esc(car.make)+'</div><h1>'+esc(car.model)+'</h1><p class="sub">'+car.year+' · '+esc(car.sub)+'</p></div>'+
+      '<div class="price"><small>Price</small>'+fmtPrice(car.price)+'</div>'+
+      '<dl class="spec-list">'+specs.map(function(s){return '<div><dt>'+s[0]+'</dt><dd>'+esc(s[1])+'</dd></div>'}).join('')+'</dl>'+
+      '<a class="btn red nitro" href="https://wa.me/'+WA+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener"><span>Enquire on WhatsApp</span> <span class="arr">→</span></a>'+
+      '<p class="fine">Viewing in Dubai by appointment</p>';
+    $('about').innerHTML=
+      '<div><div class="kicker">About this car</div><p class="lead">'+esc(car.about)+'</p>'+
+      (car.note?'<div class="note"><b>Please note</b>'+esc(car.note)+'</div>':'')+'</div>'+
+      '<ul class="points">'+car.points.map(function(p){return '<li><span>'+esc(p)+'</span></li>'}).join('')+'</ul>';
+
+    var prev=CARS[(idx-1+CARS.length)%CARS.length],next=CARS[(idx+1)%CARS.length];
+    $('carnav').innerHTML=
+      '<a href="car.html?c='+prev.id+'"><span class="k">◀ Previous car</span><b>'+esc(prev.make+' '+prev.model)+'</b></a>'+
+      '<a class="nx" href="car.html?c='+next.id+'"><span class="k">Next car ▶</span><b>'+esc(next.make+' '+next.model)+'</b></a>';
+    var others=CARS.filter(function(c){return c!==car});
+    others.sort(function(a,b){return (b.make===car.make)-(a.make===car.make)});
+    mountCards($('more'),others.slice(0,3));
+
+    // Gallery
+    var n=car.photos,cur=car.cover-1,main=$('main-img'),thumbs=$('thumbs'),lb=$('lightbox'),lbImg=$('lb-img');
+    var alt=car.year+' '+car.make+' '+car.model;
+    thumbs.innerHTML=Array.from({length:n},function(_,i){
+      return '<button type="button" data-i="'+i+'" aria-label="Photo '+(i+1)+'"><img src="'+carImg(car,i+1,true)+'" alt="" loading="lazy"></button>';
+    }).join('');
+    var show=function(i,dir){
+      cur=(i+n)%n;
+      main.src=carImg(car,cur+1);main.alt=alt+', photo '+(cur+1);
+      lbImg.src=main.src;lbImg.alt=main.alt;
+      $('g-count').textContent=$('lb-count').textContent=String(cur+1).padStart(2,'0')+' / '+String(n).padStart(2,'0');
+      if(dir&&!reduce){main.classList.remove('swap-next','swap-prev');void main.offsetWidth;main.classList.add(dir>0?'swap-next':'swap-prev')}
+      thumbs.querySelectorAll('button').forEach(function(b,j){
+        b.setAttribute('aria-current',String(j===cur));
+        if(j===cur&&dir)b.scrollIntoView({block:'nearest',inline:'nearest',behavior:reduce?'auto':'smooth'});
       });
-    },{rootMargin:'-45% 0px -50% 0px'});
-    sections.forEach(function(s){so.observe(s)});
-  }else{
-    document.querySelectorAll('[data-reveal],[data-wipe]').forEach(function(el){el.classList.add('in')});
+      [cur+1,cur-1].forEach(function(j){new Image().src=carImg(car,((j+n)%n)+1)});
+    };
+    show(cur);
+    $('g-prev').onclick=$('lb-prev').onclick=function(e){e.stopPropagation();show(cur-1,-1)};
+    $('g-next').onclick=$('lb-next').onclick=function(e){e.stopPropagation();show(cur+1,1)};
+    thumbs.addEventListener('click',function(e){var b=e.target.closest('button');if(b){var i=+b.dataset.i;show(i,i>cur?1:-1)}});
+    var openLb=function(){lb.hidden=false;document.body.style.overflow='hidden';$('lb-close').focus()};
+    var closeLb=function(){lb.hidden=true;document.body.style.overflow='';$('g-expand').focus()};
+    $('g-expand').onclick=function(e){e.stopPropagation();openLb()};
+    stage.addEventListener('click',function(e){if(e.target===main)openLb()});
+    $('lb-close').onclick=closeLb;
+    lb.addEventListener('click',function(e){if(e.target===lb)closeLb()});
+    addEventListener('keydown',function(e){
+      if(e.key==='ArrowRight')show(cur+1,1);
+      else if(e.key==='ArrowLeft')show(cur-1,-1);
+      else if(e.key==='Escape'&&!lb.hidden)closeLb();
+    });
+    var sx=null;
+    [stage,lb].forEach(function(el){
+      el.addEventListener('touchstart',function(e){sx=e.touches[0].clientX},{passive:true});
+      el.addEventListener('touchend',function(e){if(sx===null)return;var dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>40)show(cur+(dx<0?1:-1),dx<0?1:-1);sx=null});
+    });
   }
 
   // ---------- Speed: scroll velocity drives streaks, HUD and ticker ----------
   var lastY=scrollY,vel=0,mouseBoost=0;
-  addEventListener('pointermove',function(e){
+  if(hero)addEventListener('pointermove',function(e){
     if(e.clientY<hero.getBoundingClientRect().bottom)mouseBoost=Math.min(1,mouseBoost+.04);
   },{passive:true});
 
-  // Hero streaks: warp lines flying out from a vanishing point
-  var cv=document.getElementById('streaks'),ctx=cv&&cv.getContext('2d'),W=0,H=0,dpr=Math.min(devicePixelRatio||1,1.5),stars=[],heroOn=true;
-  function size(){
-    W=cv.clientWidth;H=cv.clientHeight;
-    cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
-  }
-  function spawn(s){
-    s.a=Math.random()*Math.PI*2;s.r=Math.random()*40+10;s.v=Math.random()*2+1;
-    s.red=Math.random()<.18;return s;
-  }
+  var cv=$('streaks'),ctx=cv&&cv.getContext('2d'),W=0,H=0,dpr=Math.min(devicePixelRatio||1,1.5),stars=[],heroOn=!!hero;
+  function size(){W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+  function spawn(s){s.a=Math.random()*Math.PI*2;s.r=Math.random()*40+10;s.v=Math.random()*2+1;s.red=Math.random()<.18;return s}
   if(ctx&&!reduce){
     size();addEventListener('resize',size);
     for(var i=0;i<140;i++){var s=spawn({});s.r=Math.random()*Math.max(W,H);stars.push(s)}
@@ -105,72 +208,48 @@
     var cx=W*.62,cy=H*.48,max=Math.hypot(W,H)*.7;
     ctx.lineCap='round';
     for(var i=0;i<stars.length;i++){
-      var s=stars[i],grow=1+s.r/120;
-      var r0=s.r;s.r+=s.v*grow*speed;
+      var s=stars[i],grow=1+s.r/120,r0=s.r;
+      s.r+=s.v*grow*speed;
       var len=Math.min(220,s.v*grow*speed*7);
-      var x1=cx+Math.cos(s.a)*r0,y1=cy+Math.sin(s.a)*r0*.62;
-      var x2=cx+Math.cos(s.a)*(r0+len),y2=cy+Math.sin(s.a)*(r0+len)*.62;
       var alpha=Math.min(.55,s.r/max)*(.35+speed*.12);
       ctx.strokeStyle=s.red?'rgba(255,60,70,'+alpha+')':'rgba(255,255,255,'+alpha+')';
       ctx.lineWidth=Math.min(2.4,.4+s.r/400);
-      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(s.a)*r0,cy+Math.sin(s.a)*r0*.62);
+      ctx.lineTo(cx+Math.cos(s.a)*(r0+len),cy+Math.sin(s.a)*(r0+len)*.62);
+      ctx.stroke();
       if(s.r>max)spawn(s);
     }
   }
 
-  // HUD
-  var hud=document.getElementById('hud'),hudFill=document.getElementById('hud-fill'),hudSpeed=document.getElementById('hud-speed'),hudGear=document.getElementById('hud-gear'),hudNitro=document.getElementById('hud-nitro');
-  var shownKmh=0;
-
-  // Ticker
-  var ticker=document.getElementById('ticker'),tickX=0;
+  var hud=$('hud'),hudFill=$('hud-fill'),hudSpeed=$('hud-speed'),hudNitro=$('hud-nitro'),shownKmh=0;
+  var ticker=$('ticker'),tickX=0;
 
   function frame(){
     var y=scrollY,dy=Math.abs(y-lastY);lastY=y;
     vel+=(dy-vel)*.12;
     mouseBoost*=.96;
-
-    if(ctx&&!reduce&&heroOn)drawStreaks(1+Math.min(vel,60)*.12+mouseBoost*2.5);
-
     if(!reduce){
-      var kmh=Math.min(320,Math.round(vel*9));
-      shownKmh+=(kmh-shownKmh)*.2;
-      var k=Math.round(shownKmh);
-      hudSpeed.textContent=('00'+k).slice(-3);
-      hudFill.style.strokeDasharray=(shownKmh/320*75).toFixed(1)+' 100';
-      hud.classList.toggle('on',y>innerHeight*.5);
-      hudGear.textContent=y<innerHeight*.5?'N':String(Math.max(1,currentGear+1));
-      var max=document.documentElement.scrollHeight-innerHeight;
-      hudNitro.style.width=(max>0?y/max*100:0).toFixed(1)+'%';
-
-      var half=ticker.scrollWidth/2;
-      tickX-=.6+Math.min(vel,80)*.25;
-      if(-tickX>=half)tickX+=half;
-      ticker.style.transform='translateX('+tickX+'px)';
+      if(ctx&&heroOn)drawStreaks(1+Math.min(vel,60)*.12+mouseBoost*2.5);
+      if(hud){
+        var kmh=Math.min(320,Math.round(vel*9));
+        shownKmh+=(kmh-shownKmh)*.2;
+        hudSpeed.textContent=('00'+Math.round(shownKmh)).slice(-3);
+        hudFill.style.strokeDasharray=(shownKmh/320*75).toFixed(1)+' 100';
+        hud.classList.toggle('on',y>innerHeight*.4);
+        var max=root.scrollHeight-innerHeight;
+        hudNitro.style.width=(max>0?y/max*100:0).toFixed(1)+'%';
+      }
+      if(ticker){
+        var half=ticker.scrollWidth/2;
+        tickX-=.6+Math.min(vel,80)*.25;
+        if(-tickX>=half)tickX+=half;
+        ticker.style.transform='translateX('+tickX+'px)';
+      }
     }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
-  // ---------- Card tilt + glare ----------
-  if(finePointer&&!reduce){
-    document.querySelectorAll('.tilt').forEach(function(el){
-      var g=document.createElement('span');g.className='glare';el.appendChild(g);
-      el.addEventListener('pointerenter',function(){el.style.transition='transform .15s ease-out'});
-      el.addEventListener('pointermove',function(e){
-        var r=el.getBoundingClientRect(),px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;
-        el.style.transform='perspective(900px) rotateX('+((.5-py)*7).toFixed(2)+'deg) rotateY('+((px-.5)*9).toFixed(2)+'deg) translateZ(0)';
-        el.style.setProperty('--gx',(px*100)+'%');el.style.setProperty('--gy',(py*100)+'%');
-      });
-      el.addEventListener('pointerleave',function(){
-        el.style.transition='transform .6s cubic-bezier(.2,.8,.2,1)';el.style.transform='';
-      });
-    });
-  }
-
-  // ---------- Footer year, copy, enquiry form ----------
-  document.getElementById('yr').textContent=new Date().getFullYear();
-  document.querySelectorAll('[data-copy]').forEach(function(b){b.addEventListener('click',function(){var t=b.getAttribute('data-copy');function done(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1600)}function fallback(){var r=document.createRange();r.selectNodeContents(document.getElementById('wa-num'));var s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected'}try{navigator.clipboard.writeText(t).then(done,fallback)}catch(e){fallback()}});});
-  var form=document.getElementById('enq'),note=document.getElementById('f-note');
-  form.addEventListener('submit',function(e){e.preventDefault();var m=form.model.value.trim();if(!m){note.textContent='Add the model so we know what we are valuing.';note.className='formnote';form.model.focus();return}var lines=['Hello Big Motors, I would like an assessment.','Model: '+m];if(form.year.value.trim())lines.push('Year: '+form.year.value.trim());if(form.km.value.trim())lines.push('Mileage: '+form.km.value.trim()+' km');lines.push('Interested in: '+form.route.value);if(form.notes.value.trim())lines.push('Notes: '+form.notes.value.trim());var url='https://wa.me/971506686691?text='+encodeURIComponent(lines.join('\n'));var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();note.innerHTML='If WhatsApp did not open, message <b>+971 50 668 6691</b> directly.';note.className='formnote ok';});
+  var yr=$('yr');if(yr)yr.textContent=new Date().getFullYear();
 })();
