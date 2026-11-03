@@ -412,7 +412,7 @@
       '<div><div class="kicker">'+esc(car.make)+'</div><h1>'+esc(car.model)+'</h1><p class="sub">'+car.year+' · '+esc(car.sub)+'</p></div>'+
       
       '<dl class="spec-list">'+specs.map(function(s){return '<div><dt>'+s[0]+'</dt><dd>'+esc(s[1])+'</dd></div>'}).join('')+'</dl>'+
-      '<a class="btn red nitro" href="https://wa.me/'+WA+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener"><span>Enquire on WhatsApp</span> <span class="arr">→</span></a>'+
+      '<a class="btn red nitro" href="https://wa.me/'+WA+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener"><span class="wa-ico" aria-hidden="true"></span><span>Enquire on WhatsApp</span> <span class="arr">→</span></a>'+
       '<p class="fine">Viewing in Dubai by appointment</p>';
     $('car-about').innerHTML=
       '<div><div class="kicker">About this car</div>'+aboutHTML(car)+
