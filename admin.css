@@ -94,7 +94,7 @@ table.cars{width:100%;border-collapse:collapse;min-width:820px}
 .ph img{width:100%;aspect-ratio:3/2;object-fit:cover}
 .ph.cover{outline:3px solid var(--red);outline-offset:-3px}
 .ph .badge{position:absolute;top:6px;left:6px;font-family:var(--f-mono);font-size:10px;font-weight:700;background:var(--red);color:#fff;padding:2px 6px}
-.ph-tools{display:flex;justify-content:space-between;gap:2px;padding:4px;background:#fff;border:1px solid var(--rule);border-top:0}
+.ph-tools{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px;padding:4px;background:#fff;border:1px solid var(--rule);border-top:0}
 .ph-tools .del:hover{background:var(--red)!important}
 .ph.uploading{display:grid;place-items:center;aspect-ratio:3/2;color:#fff;font-family:var(--f-mono);font-size:11px}
 .upload{cursor:pointer}
@@ -132,3 +132,14 @@ table.cars{width:100%;border-collapse:collapse;min-width:820px}
 .zoom-controls{display:flex;align-items:center;gap:12px;margin-top:14px;font-family:var(--f-mono);font-size:12px}
 .zoom-controls input[type=range]{flex:1;padding:0;border:0;accent-color:var(--red)}
 .zoom-controls b{min-width:40px;text-align:right}
+
+/* Effects: background blur + vignette */
+.fx-body{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(220px,1fr);gap:22px;align-items:start;margin-top:16px}
+@media (max-width:760px){.fx-body{grid-template-columns:minmax(0,1fr)}}
+.fx-view{background:#0b0c0e;line-height:0}
+.fx-view canvas{width:100%;height:auto;cursor:crosshair;touch-action:none}
+.fx-controls{display:grid;gap:16px}
+.fx-controls label{display:grid;gap:6px}
+.fx-controls label span{display:flex;justify-content:space-between}
+.fx-controls label b{font-weight:700;color:var(--ink)}
+.fx-controls input[type=range]{padding:0;border:0;accent-color:var(--red)}

@@ -189,6 +189,7 @@
         '<button type="button" data-act="cover" aria-label="Make cover"'+(i===cover?' disabled':'')+'>★</button>'+
         '<button type="button" data-act="crop" aria-label="Adjust crop" title="Adjust crop">✥</button>'+
         '<button type="button" data-act="zoom" aria-label="Zoom in and add as a new photo" title="Zoom in and add as a new photo">⊕</button>'+
+        '<button type="button" data-act="fx" aria-label="Blur background and vignette" title="Blur background and vignette">◐</button>'+
         '<button type="button" data-act="right" aria-label="Move right"'+(i===photos.length-1?' disabled':'')+'>▶</button>'+
         '<button type="button" class="del" data-act="del" aria-label="Remove photo">✕</button></div></div>';
     }).join('');
@@ -198,6 +199,7 @@
     var i=+b.closest('.ph').dataset.i,act=b.dataset.act,c=photos[cover];
     if(act==='crop'){openCrop(i);return}
     if(act==='zoom'){openZoom(i);return}
+    if(act==='fx'){openFx(i);return}
     if(act==='cover')cover=i;
     else if(act==='del'){photos.splice(i,1);if(i===cover)cover=0;else cover=photos.indexOf(c)}
     else{var j=i+(act==='left'?-1:1),t=photos[i];photos[i]=photos[j];photos[j]=t;cover=photos.indexOf(c)}
@@ -329,6 +331,108 @@
       msg($('zoom-msg'),'Could not save the zoomed photo. '+(err&&err.name==='SecurityError'?'The browser blocked reading this image; open the admin from the website, not a local file.':(err&&err.message)||''),'err');
     });
   });
+
+  // ---------- Effects: background blur (lens-style, sharp around a focus point) and vignette ----------
+  var fxI=-1,fxImg=new Image(),fxSet={x:50,y:55,size:32,blur:12,vig:35},fxQueued=false;
+  var fxCanvas=$('fx-canvas'),FX_DEFAULT={size:32,blur:12,vig:35};
+  fxImg.crossOrigin='anonymous';
+  var canFilter=(function(){var g=document.createElement('canvas').getContext('2d');g.filter='blur(2px)';return g.filter==='blur(2px)'})();
+  function makeCanvas(w,h){var c=document.createElement('canvas');c.width=w;c.height=h;return c}
+  function blurInto(g,img,w,h,px){
+    if(canFilter){
+      g.filter='blur('+px+'px)';
+      g.drawImage(img,-px*2,-px*2,w+px*4,h+px*4); // overscan so the edges don't fade to transparent
+      g.filter='none';return;
+    }
+    // Safari has no canvas filter: blur by scaling down and back up in steps
+    var s=Math.max(2,px/1.5),sw=Math.max(1,Math.round(w/s)),sh=Math.max(1,Math.round(h/s));
+    var t=makeCanvas(sw,sh),tg=t.getContext('2d');tg.imageSmoothingQuality='high';tg.drawImage(img,0,0,sw,sh);
+    g.imageSmoothingQuality='high';g.drawImage(t,0,0,w,h);
+  }
+  // Fill an ellipse-shaped radial gradient centred on (cx,cy); ry follows the photo's shape
+  function radial(g,cx,cy,w,h,r0,r1,stops){
+    g.save();g.translate(cx,cy);g.scale(1,h/w);
+    var gr=g.createRadialGradient(0,0,r0,0,0,r1);
+    stops.forEach(function(s){gr.addColorStop(s[0],s[1])});
+    g.fillStyle=gr;g.fillRect(-w*3,-w*3,w*6,w*6);g.restore();
+  }
+  function fxRender(img,w){
+    var h=Math.round(w*img.naturalHeight/img.naturalWidth),c=makeCanvas(w,h),g=c.getContext('2d');
+    g.drawImage(img,0,0,w,h);
+    var px=fxSet.blur*w/1000; // scale with output size so the preview matches the saved photo
+    if(px>0.3){
+      var b=makeCanvas(w,h),bg=b.getContext('2d');
+      blurInto(bg,img,w,h,px);
+      var r=fxSet.size/100*w*0.5;
+      bg.globalCompositeOperation='destination-in';
+      radial(bg,fxSet.x/100*w,fxSet.y/100*h,w,h,r,r*2.2,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,1)']]);
+      g.drawImage(b,0,0);
+    }
+    if(fxSet.vig>0)radial(g,w/2,h/2,w,h,w*0.32,w*0.74,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,'+(fxSet.vig/100*0.85).toFixed(3)+')']]);
+    return c;
+  }
+  function fxDraw(){
+    fxQueued=false;
+    if(!fxImg.naturalWidth)return;
+    var w=Math.min(fxImg.naturalWidth,Math.round(fxCanvas.parentNode.clientWidth*Math.min(devicePixelRatio||1,2)));
+    var out=fxRender(fxImg,w);
+    fxCanvas.width=out.width;fxCanvas.height=out.height;fxCanvas.getContext('2d').drawImage(out,0,0);
+    $('fx-blur-v').textContent=fxSet.blur?fxSet.blur:'Off';
+    $('fx-size-v').textContent=fxSet.size+'%';
+    $('fx-vig-v').textContent=fxSet.vig?fxSet.vig+'%':'Off';
+  }
+  function fxQueue(){if(!fxQueued){fxQueued=true;requestAnimationFrame(fxDraw)}}
+  function fxSync(){$('fx-blur').value=fxSet.blur;$('fx-size').value=fxSet.size;$('fx-vig').value=fxSet.vig}
+  function openFx(i){
+    var p=photos[i];fxI=i;
+    fxSet={x:p.fx!=null?p.fx:50,y:p.fy!=null?p.fy:55,size:FX_DEFAULT.size,blur:FX_DEFAULT.blur,vig:FX_DEFAULT.vig};
+    fxSync();$('fx-modal').hidden=false;
+    $('fx-new').disabled=$('fx-replace').disabled=true;msg($('fx-msg'),'Loading the full-size photo…');
+    fxImg.onload=function(){msg($('fx-msg'),'');$('fx-new').disabled=$('fx-replace').disabled=false;fxDraw()};
+    fxImg.onerror=function(){msg($('fx-msg'),'Could not load this photo.','err')};
+    fxImg.src=p.src;
+  }
+  [['fx-blur','blur'],['fx-size','size'],['fx-vig','vig']].forEach(function(k){
+    $(k[0]).addEventListener('input',function(e){fxSet[k[1]]=+e.target.value;fxQueue()});
+  });
+  var fxDrag=false;
+  function fxAt(e){
+    var r=fxCanvas.getBoundingClientRect();
+    fxSet.x=Math.round(Math.min(100,Math.max(0,(e.clientX-r.left)/r.width*100)));
+    fxSet.y=Math.round(Math.min(100,Math.max(0,(e.clientY-r.top)/r.height*100)));
+    fxQueue();
+  }
+  fxCanvas.addEventListener('pointerdown',function(e){fxDrag=true;fxCanvas.setPointerCapture(e.pointerId);fxAt(e)});
+  fxCanvas.addEventListener('pointermove',function(e){if(fxDrag)fxAt(e)});
+  fxCanvas.addEventListener('pointerup',function(){fxDrag=false});
+  $('fx-reset').addEventListener('click',function(){fxSet.size=FX_DEFAULT.size;fxSet.blur=FX_DEFAULT.blur;fxSet.vig=FX_DEFAULT.vig;fxSync();fxQueue()});
+  function closeFx(){$('fx-modal').hidden=true;fxI=-1}
+  $('fx-cancel').addEventListener('click',closeFx);
+  addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('fx-modal').hidden)closeFx()});
+  addEventListener('resize',function(){if(!$('fx-modal').hidden)fxQueue()});
+  function canvasJpeg(c,q){return new Promise(function(res,rej){try{c.toBlob(function(b){b?res(b):rej(new Error('empty'))},'image/jpeg',q)}catch(err){rej(err)}})}
+  function fxSave(asNew){
+    var btns=[$('fx-new'),$('fx-replace')];btns.forEach(function(b){busy(b,true)});
+    msg($('fx-msg'),'Saving the edited photo…');
+    var big=fxRender(fxImg,Math.min(1600,fxImg.naturalWidth)),small=fxRender(fxImg,Math.min(640,fxImg.naturalWidth));
+    var base='cars/'+(form.slug.value||'new')+'/fx-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);
+    Promise.all([canvasJpeg(big,.86),canvasJpeg(small,.8)]).then(function(b){
+      return Promise.all([put(base+'.jpg',b[0]),put(base+'-sm.jpg',b[1])]);
+    }).then(function(urls){
+      var old=photos[fxI],p={src:urls[0],sm:urls[1]};
+      if(old.fx!=null){p.fx=old.fx;p.fy=old.fy}
+      var c=photos[cover];
+      if(asNew){photos.splice(fxI+1,0,p);cover=photos.indexOf(c)}
+      else{photos[fxI]=p;if(old===c)c=p;cover=photos.indexOf(c)}
+      dirty=true;btns.forEach(function(b){busy(b,false)});closeFx();renderPhotos();
+      msg($('upload-msg'),(asNew?'Edited photo added.':'Photo replaced.')+' Remember to save.','ok');
+    },function(err){
+      btns.forEach(function(b){busy(b,false)});console.error(err);
+      msg($('fx-msg'),'Could not save the edited photo. '+(err&&err.name==='SecurityError'?'The browser blocked reading this image; open the admin from the website, not a local file.':(err&&err.message)||''),'err');
+    });
+  }
+  $('fx-new').addEventListener('click',function(){fxSave(true)});
+  $('fx-replace').addEventListener('click',function(){fxSave(false)});
 
   function put(path,blob){
     return sb.storage.from(BUCKET).upload(path,blob,{contentType:'image/jpeg',cacheControl:'31536000',upsert:false}).then(function(r){

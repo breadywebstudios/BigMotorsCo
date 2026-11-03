@@ -183,6 +183,30 @@
   </div>
 </div>
 
+<!-- Effects: background blur + vignette -->
+<div class="modal" id="fx-modal" role="dialog" aria-modal="true" aria-labelledby="fx-title" hidden>
+  <div class="modal-box">
+    <h2 id="fx-title">Blur background &amp; vignette</h2>
+    <p class="muted">Click or drag on the car to set the focus point. The area around it stays sharp and the blur builds towards the edges, like a camera lens.</p>
+    <div class="fx-body">
+      <div class="fx-view"><canvas id="fx-canvas" aria-label="Preview. Click to set the focus point."></canvas></div>
+      <div class="fx-controls">
+        <label><span>Background blur <b id="fx-blur-v"></b></span><input id="fx-blur" type="range" min="0" max="30" step="1"></label>
+        <label><span>Sharp area <b id="fx-size-v"></b></span><input id="fx-size" type="range" min="10" max="80" step="1"></label>
+        <label><span>Vignette <b id="fx-vig-v"></b></span><input id="fx-vig" type="range" min="0" max="100" step="1"></label>
+        <button class="link" type="button" id="fx-reset">Reset sliders</button>
+      </div>
+    </div>
+    <p class="msg" id="fx-msg" aria-live="polite"></p>
+    <div class="modal-actions">
+      <span></span>
+      <button class="btn ghost" type="button" id="fx-cancel">Cancel</button>
+      <button class="btn ghost" type="button" id="fx-new">Save as new photo</button>
+      <button class="btn red" type="button" id="fx-replace">Replace photo</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
