@@ -50,7 +50,7 @@ p{margin:0}
   .nav.open ul li:nth-child(2){transition-delay:.05s}
   .nav.open ul li:nth-child(3){transition-delay:.1s}
   .nav.open ul li:nth-child(4){transition-delay:.15s}
-  .nav ul a{display:flex;align-items:baseline;gap:14px;padding:16px 0;color:#fff;font-size:28px;font-weight:900;font-style:italic;font-stretch:120%;letter-spacing:-.01em}
+  .nav ul a{display:flex;align-items:baseline;gap:14px;padding:14px 0;color:#fff;font-size:20px;font-weight:900;font-style:italic;font-stretch:120%;letter-spacing:-.01em}
   .nav ul a::before{counter-increment:nav;content:"0" counter(nav);font-family:var(--f-mono);font-size:11px;font-style:normal;font-weight:700;color:var(--red);letter-spacing:.1em}
   .nav ul a::after{display:none}
 }

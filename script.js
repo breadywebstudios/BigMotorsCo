@@ -12,7 +12,7 @@
   if(heroFrame){
     // The frame stays invisible (hero photo shows) until YouTube reports it is actually playing,
     // so its title, play button and "More videos" overlays never sit over the hero text.
-    var heroWrap=heroFrame.parentNode;
+    var heroWrap=heroFrame.parentNode,heroReveal;
     var setHeroVideo=function(id){
       if(!/^[\w-]{11}$/.test(id))id=heroFrame.dataset.video;
       heroFrame.src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&mute=1&loop=1&playlist='+id+'&controls=0&playsinline=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&enablejsapi=1&origin='+encodeURIComponent(location.origin);
@@ -20,8 +20,10 @@
         new YT.Player(heroFrame,{events:{
           onReady:function(e){e.target.mute();e.target.playVideo()},
           onStateChange:function(e){
-            // 1 playing; 0 ended / 3 buffering keep the last frame (loop restart); -1, 2, 5 hide it
-            if(e.data===1)heroWrap.classList.add('playing');
+            // 1 playing: reveal after 3.5s, once YouTube has faded its own play icon and title;
+            // 0 ended / 3 buffering keep the last frame (loop restart); -1, 2, 5 hide it
+            clearTimeout(heroReveal);
+            if(e.data===1){if(!heroWrap.classList.contains('playing'))heroReveal=setTimeout(function(){heroWrap.classList.add('playing')},3500)}
             else if(e.data!==0&&e.data!==3)heroWrap.classList.remove('playing');
             if(e.data===0)e.target.playVideo();
           }
