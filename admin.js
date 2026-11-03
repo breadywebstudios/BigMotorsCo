@@ -31,7 +31,7 @@
     if(!$('edit-view').hidden||!$('reset-view').hidden)return;
     sb.rpc('bm_is_admin').then(function(r){
       if(r.error||!r.data){show('denied-view');return}
-      show('list-view');loadCars();loadAdmins();
+      show('list-view');loadCars().then(function(ok){if(ok)cleanStorage()});loadAdmins();
     });
   }
 
@@ -77,7 +77,7 @@
   function loadCars(){
     return sb.from('bm_cars').select('*').order('sort_order').order('year',{ascending:false}).then(function(r){
       if(r.error){toast('Could not load cars: '+r.error.message,true);return}
-      cars=r.data;renderList();
+      cars=r.data;renderList();return true;
     });
   }
   function mileage(c){return c.km!=null?c.km.toLocaleString('en-US')+' km':c.mi!=null?c.mi.toLocaleString('en-US')+' mi':'—'}
@@ -461,6 +461,26 @@
     });
   });
 
+  // Remove uploads no car uses (left behind by abandoned edits). Only files over a day old,
+  // so another admin's unsaved uploads are never touched.
+  function cleanStorage(){
+    var used={};
+    cars.forEach(function(c){c.photos.forEach(function(p){[p.src,p.sm].forEach(function(u){var x=pathOf(u);if(x)used[x]=1})})});
+    var dayAgo=Date.now()-864e5;
+    sb.storage.from(BUCKET).list('cars',{limit:1000}).then(function(r){
+      if(r.error||!r.data)return;
+      r.data.forEach(function(dir){
+        sb.storage.from(BUCKET).list('cars/'+dir.name,{limit:1000}).then(function(f){
+          if(f.error||!f.data)return;
+          var stale=f.data.filter(function(o){
+            var path='cars/'+dir.name+'/'+o.name;
+            return o.id&&!used[path]&&new Date(o.created_at).getTime()<dayAgo;
+          }).map(function(o){return 'cars/'+dir.name+'/'+o.name});
+          removePaths(stale);
+        });
+      });
+    });
+  }
   function removePaths(paths){if(paths.length)return sb.storage.from(BUCKET).remove(paths);return Promise.resolve()}
   function discardUploads(){var p=sessionUploads;sessionUploads=[];return removePaths(p)}
   function leave(){
@@ -504,7 +524,8 @@
       busy(btn,false);
       if(r.error){toast('Not saved: '+r.error.message,true);return}
       var keep=collectPaths(photos);
-      removePaths(origPaths.filter(function(p){return keep.indexOf(p)<0}));
+      // Delete replaced originals and any in-between uploads from this edit that did not make it into the final photos
+      removePaths(origPaths.concat(sessionUploads).filter(function(p){return keep.indexOf(p)<0}));
       sessionUploads=[];dirty=false;editing=null;
       toast('Saved. The website shows it right away.');
       show('list-view');loadCars();
