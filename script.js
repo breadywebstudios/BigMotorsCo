@@ -483,12 +483,29 @@
     thumbs.innerHTML=Array.from({length:n},function(_,i){
       return '<button type="button" data-i="'+i+'" aria-label="Photo '+(i+1)+'"><img src="'+carImg(car,i,true)+'" alt="" loading="lazy" style="'+carPos(car.photos[i])+'"></button>';
     }).join('');
+    // Photo swap: wait until the next photo is decoded, then slide it in while a copy of the old one fades out
+    var swapToken=0;
+    var swapTo=function(url,label,dir){
+      var token=++swapToken,next=new Image();next.src=url;
+      var apply=function(){
+        if(token!==swapToken)return;
+        stage.querySelectorAll('.ghost').forEach(function(g){g.remove()});
+        if(dir&&!reduce&&main.getAttribute('src')){
+          var ghost=main.cloneNode();ghost.removeAttribute('id');ghost.className='ghost '+(dir>0?'out-next':'out-prev');ghost.alt='';
+          ghost.addEventListener('animationend',function(){ghost.remove()});
+          main.after(ghost);
+        }
+        main.src=url;main.alt=label;
+        if(dir&&!reduce){main.classList.remove('swap-next','swap-prev');void main.offsetWidth;main.classList.add(dir>0?'swap-next':'swap-prev')}
+      };
+      (next.decode?next.decode():Promise.resolve()).then(apply,apply);
+    };
     var show=function(i,dir){
       cur=(i+n)%n;
-      main.src=carImg(car,cur);main.alt=alt+', photo '+(cur+1);
-      lbImg.src=main.src;lbImg.alt=main.alt;
+      var url=carImg(car,cur),label=alt+', photo '+(cur+1);
+      swapTo(url,label,dir);
+      lbImg.src=url;lbImg.alt=label;
       $('g-count').textContent=$('lb-count').textContent=String(cur+1).padStart(2,'0')+' / '+String(n).padStart(2,'0');
-      if(dir&&!reduce){main.classList.remove('swap-next','swap-prev');void main.offsetWidth;main.classList.add(dir>0?'swap-next':'swap-prev')}
       thumbs.querySelectorAll('button').forEach(function(b,j){
         b.setAttribute('aria-current',String(j===cur));
         if(j===cur&&dir)b.scrollIntoView({block:'nearest',inline:'nearest',behavior:reduce?'auto':'smooth'});
