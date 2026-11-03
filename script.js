@@ -106,8 +106,10 @@
   }
 
   // ---------- Showroom: "View car" opens a 3D carousel of the car's photos ----------
+  // Rotation is a fixed-length eased tween (not a per-frame chase), and the loop only runs while something moves
   var sr=null,srRing,srItems=[],srCar=null,srN=0,srStep=0,srR=0,srAngle=0,srTarget=0,srFront=-1,srRaf=0,srOpener=null,srDrag=null;
-  var SR_MAX=12;
+  var srFrom=0,srT0=0,srDur=0,SR_MAX=12;
+  function easeOut(t){return 1-Math.pow(1-t,3)}
   function buildShowroom(){
     sr=document.createElement('div');
     sr.className='showroom';sr.hidden=true;
@@ -129,13 +131,15 @@
     sr.querySelector('.sr-close').addEventListener('click',closeShowroom);
     sr.querySelectorAll('.sr-btn').forEach(function(b){b.addEventListener('click',function(){turn(+b.dataset.dir)})});
     scene.addEventListener('pointerdown',function(e){
-      srDrag={x:e.clientX,a:srTarget,moved:0,target:e.target};
+      srDrag={x:e.clientX,a:srAngle,moved:0,target:e.target};
       scene.setPointerCapture(e.pointerId);scene.classList.add('dragging');
     });
     scene.addEventListener('pointermove',function(e){
       if(!srDrag)return;
       var dx=e.clientX-srDrag.x;srDrag.moved=Math.max(srDrag.moved,Math.abs(dx));
-      srTarget=srDrag.a+dx*0.28;
+      if(srDrag.moved<6)return;
+      srAngle=srTarget=srDrag.a+dx*0.28;srDur=0;
+      srRender();
     });
     var endDrag=function(){
       if(!srDrag)return;
@@ -143,8 +147,9 @@
       if(d.moved<6){
         var fig=d.target.closest&&d.target.closest('.sr-item');
         if(fig){var k=srItems.indexOf(fig);if(k===srFront)location.href=$('sr-details').href;else goTo(k)}
+        return;
       }
-      srTarget=Math.round(srTarget/srStep)*srStep;
+      spinTo(Math.round(srAngle/srStep)*srStep,280);
     };
     scene.addEventListener('pointerup',endDrag);
     scene.addEventListener('pointercancel',endDrag);
@@ -174,11 +179,22 @@
     srRing.style.setProperty('--w',w+'px');
     srItems.forEach(function(f,i){f.style.transform='rotateY('+(i*srStep)+'deg) translateZ('+srR+'px)'});
   }
-  function turn(dir){srTarget=Math.round(srTarget/srStep)*srStep-dir*srStep}
+  function spinTo(angle,dur){
+    srFrom=srAngle;srTarget=angle;srT0=performance.now();srDur=reduce?0:dur;
+    if(!srDur){srAngle=angle;srRender();return}
+    srRender();
+    cancelAnimationFrame(srRaf);srRaf=requestAnimationFrame(srTick);
+  }
+  function turn(dir){spinTo(Math.round(srTarget/srStep)*srStep-dir*srStep,420)}
   function goTo(k){var d=((k-srFront)%srN+srN)%srN;if(d>srN/2)d-=srN;turn(d)}
   function srTick(){
-    srAngle+=(srTarget-srAngle)*(reduce?1:0.08);
-    srRing.style.transform='translateZ('+(-srR)+'px) rotateY('+srAngle.toFixed(2)+'deg)';
+    var t=Math.max(0,Math.min(1,(performance.now()-srT0)/srDur));
+    srAngle=srFrom+(srTarget-srFrom)*easeOut(t);
+    srRender();
+    if(t<1)srRaf=requestAnimationFrame(srTick);
+  }
+  function srRender(){
+    srRing.style.transform='translate3d(0,0,'+(-srR)+'px) rotateY('+srAngle.toFixed(2)+'deg)';
     for(var i=0;i<srN;i++){
       var rel=((i*srStep+srAngle)%360+540)%360-180;
       srItems[i].style.opacity=(1-Math.min(Math.abs(rel),160)/160*0.8).toFixed(2);
@@ -191,7 +207,6 @@
       if(img.dataset.full&&img.getAttribute('src')!==img.dataset.full)img.src=img.dataset.full;
       $('sr-count').textContent=String(f+1).padStart(2,'0')+' / '+String(srN).padStart(2,'0');
     }
-    srRaf=requestAnimationFrame(srTick);
   }
   function openShowroom(car,opener){
     if(!sr)buildShowroom();
@@ -200,7 +215,7 @@
     srN=ph.length;srStep=360/srN;srFront=-1;
     var alt=car.year+' '+car.make+' '+car.model;
     srRing.innerHTML=ph.map(function(p,i){
-      return '<figure class="sr-item"><img src="'+esc(p.sm||p.src)+'" data-full="'+esc(p.src)+'" alt="'+esc(alt+', photo '+(i+1))+'" draggable="false"></figure>';
+      return '<figure class="sr-item"><img src="'+esc(p.sm||p.src)+'" data-full="'+esc(p.src)+'" alt="'+esc(alt+', photo '+(i+1))+'" draggable="false" decoding="async"></figure>';
     }).join('');
     srItems=[].slice.call(srRing.children);
     layoutRing();
@@ -209,11 +224,11 @@
     $('sr-sub').textContent=car.year+(car.sub?' · '+car.sub:'');
     $('sr-specs').innerHTML=[car.year,fmtMiles(car),car.gearbox,car.engine].filter(Boolean).map(function(s){return '<span>'+esc(s)+'</span>'}).join('');
     $('sr-details').href='car.html?c='+encodeURIComponent(car.id);
-    srTarget=-cover*srStep;
-    srAngle=reduce?srTarget:srTarget+90; // short settle-in turn
+    var home=-cover*srStep;
+    srTarget=home;srAngle=reduce?home:home+60; // short settle-in turn
     sr.hidden=false;document.body.style.overflow='hidden';
-    requestAnimationFrame(function(){sr.classList.add('open')});
-    cancelAnimationFrame(srRaf);srRaf=requestAnimationFrame(srTick);
+    srRender();
+    requestAnimationFrame(function(){sr.classList.add('open');spinTo(home,650)});
     sr.querySelector('.sr-close').focus();
   }
   function closeShowroom(){
@@ -427,6 +442,7 @@
   var ticker=$('ticker'),tickX=0;
 
   function frame(){
+    if(sr&&!sr.hidden){requestAnimationFrame(frame);return} // keep the showroom smooth
     var y=scrollY,dy=Math.abs(y-lastY);lastY=y;
     vel+=(dy-vel)*.12;
     mouseBoost*=.96;
