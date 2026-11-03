@@ -263,6 +263,59 @@
     e.preventDefault();openShowroom(car,a);
   });
 
+  // ---------- "About this car": turn pasted listing text into paragraphs, headings, lists and a spec table ----------
+  function aboutHTML(car){
+    var text=String(car.about||'').replace(/\r/g,'').trim();
+    if(!text)return '';
+    var paras=text.split(/\n\s*\n/).map(function(p){return p.trim()}).filter(Boolean);
+    // Drop a first line that only repeats the listing title (the panel already shows the name)
+    if(paras.length>1&&paras[0].indexOf('\n')<0&&paras[0].length<140&&paras[0].toLowerCase().indexOf(car.make.toLowerCase())>-1)paras.shift();
+    var blocks=[];
+    paras.forEach(function(p){
+      p.split('\n').map(function(l){return l.trim()}).filter(Boolean).forEach(function(line){
+        var spaced=line.match(/^(?:[A-Z] ){2,}[A-Z](?: +(?:[A-Z] )*[A-Z])*$/);
+        var spec=line.match(/^([A-Z][A-Za-z0-9()&\/.-]*(?: [A-Za-z0-9()&\/.-]+){0,2}):\s+(.+)$/); // short labels only, e.g. "Service history: full"
+        var bullet=line.match(/^[•·\-–]\s*(.+)$/);
+        if(spaced)blocks.push({t:'h',v:line.replace(/ {2,}/g,'\u0000').replace(/ /g,'').replace(/\u0000/g,' ')});
+        else if(spec&&!/^price$/i.test(spec[1].trim()))blocks.push({t:'spec',k:spec[1].trim(),v:spec[2].trim()});
+        else if(spec)return;
+        else if(bullet)blocks.push({t:'li',v:bullet[1]});
+        else if(line.length<48&&!/[.!?,:]$/.test(line)&&line===line.toUpperCase()&&/[A-Z]/.test(line))blocks.push({t:'h',v:line});
+        else blocks.push({t:'p',v:line});
+      });
+    });
+    var html='',lead=false,i=0;
+    while(i<blocks.length){
+      var b=blocks[i];
+      if(b.t==='spec'){
+        html+='<dl class="about-specs">';
+        while(i<blocks.length&&blocks[i].t==='spec'){html+='<div><dt>'+esc(blocks[i].k)+'</dt><dd>'+esc(blocks[i].v)+'</dd></div>';i++}
+        html+='</dl>';continue;
+      }
+      if(b.t==='li'){
+        html+='<ul class="about-list">';
+        while(i<blocks.length&&blocks[i].t==='li'){html+='<li>'+esc(blocks[i].v)+'</li>';i++}
+        html+='</ul>';continue;
+      }
+      if(b.t==='h')html+='<h3>'+esc(b.v.toLowerCase().replace(/(^|\s)\S/g,function(c){return c.toUpperCase()}))+'</h3>';
+      else{
+        // "Engine. The oil pan came off…" -> bold the short lead-in label
+        var lab=lead&&b.v.match(/^([A-Z][A-Za-z]+(?: [A-Za-z]+){0,2}\.)\s+(.+)$/);
+        html+='<p'+(lead?'':' class="intro"')+'>'+(lab?'<b>'+esc(lab[1])+'</b> '+esc(lab[2]):esc(b.v))+'</p>';lead=true;
+      }
+      i++;
+    }
+    // Long descriptions open with the first part and a "Read full description" button
+    if(text.length>1100){
+      var cut=0,len=0,parts=html.split(/(?=<p|<h3|<dl|<ul)/);
+      for(cut=0;cut<parts.length&&len<700;cut++)len+=parts[cut].replace(/<[^>]+>/g,'').length;
+      if(cut<parts.length-1)
+        html=parts.slice(0,cut).join('')+'<div class="about-more" hidden>'+parts.slice(cut).join('')+'</div>'+
+          '<button class="about-toggle" type="button" aria-expanded="false">Read full description</button>';
+    }
+    return '<div class="about-desc">'+html+'</div>';
+  }
+
   // Pages that need the inventory run once it has loaded from Supabase
   function initPages(){
 
@@ -358,11 +411,16 @@
       '<dl class="spec-list">'+specs.map(function(s){return '<div><dt>'+s[0]+'</dt><dd>'+esc(s[1])+'</dd></div>'}).join('')+'</dl>'+
       '<a class="btn red nitro" href="https://wa.me/'+WA+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener"><span>Enquire on WhatsApp</span> <span class="arr">→</span></a>'+
       '<p class="fine">Viewing in Dubai by appointment</p>';
-    $('about').innerHTML=
-      '<div><div class="kicker">About this car</div><p class="lead">'+esc(car.about)+'</p>'+
+    $('car-about').innerHTML=
+      '<div><div class="kicker">About this car</div>'+aboutHTML(car)+
       (car.note?'<div class="note"><b>Please note</b>'+esc(car.note)+'</div>':'')+'</div>'+
       '<ul class="points">'+car.points.map(function(p){return '<li><span>'+esc(p)+'</span></li>'}).join('')+'</ul>';
 
+    var tog=$('car-about').querySelector('.about-toggle');
+    if(tog)tog.addEventListener('click',function(){
+      var more=$('car-about').querySelector('.about-more'),open=more.hidden;
+      more.hidden=!open;tog.setAttribute('aria-expanded',String(open));tog.textContent=open?'Show less':'Read full description';
+    });
     var prev=CARS[(idx-1+CARS.length)%CARS.length],next=CARS[(idx+1)%CARS.length];
     $('carnav').innerHTML=
       '<a href="car.html?c='+prev.id+'"><span class="k">◀ Previous car</span><b>'+esc(prev.make+' '+prev.model)+'</b></a>'+
