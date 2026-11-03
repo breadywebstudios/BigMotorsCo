@@ -162,7 +162,7 @@
     form.unit.value=car&&car.km==null&&car.mi!=null?'mi':'km';
     form.slug.value=car?car.id:'';form.slug.readOnly=!!car;
     form.published.checked=car?car.published:true;
-    photos=car?car.photos.map(function(p){return{src:p.src,sm:p.sm}}):[];
+    photos=car?car.photos.map(function(p){var q={src:p.src,sm:p.sm};if(p.fx!=null){q.fx=p.fx;q.fy=p.fy}return q}):[];
     cover=car?car.cover:0;
     origPaths=collectPaths(photos);
     $('danger').hidden=!car;
@@ -184,9 +184,10 @@
     if(cover>=photos.length)cover=0;
     $('photo-count').textContent=photos.length?'('+photos.length+')':'';
     $('photos').innerHTML=photos.map(function(p,i){
-      return '<div class="ph'+(i===cover?' cover':'')+'" data-i="'+i+'"><img src="'+esc(p.sm||p.src)+'" alt="Photo '+(i+1)+'" loading="lazy">'+(i===cover?'<span class="badge">Cover</span>':'')+
+      return '<div class="ph'+(i===cover?' cover':'')+'" data-i="'+i+'"><img src="'+esc(p.sm||p.src)+'" alt="Photo '+(i+1)+'" loading="lazy" style="'+carPos(p)+'">'+(i===cover?'<span class="badge">Cover</span>':'')+(p.fx!=null?'<span class="badge crop">Cropped</span>':'')+
         '<div class="ph-tools"><button type="button" data-act="left" aria-label="Move left"'+(i===0?' disabled':'')+'>◀</button>'+
         '<button type="button" data-act="cover" aria-label="Make cover"'+(i===cover?' disabled':'')+'>★</button>'+
+        '<button type="button" data-act="crop" aria-label="Adjust crop" title="Adjust crop">✥</button>'+
         '<button type="button" data-act="right" aria-label="Move right"'+(i===photos.length-1?' disabled':'')+'>▶</button>'+
         '<button type="button" class="del" data-act="del" aria-label="Remove photo">✕</button></div></div>';
     }).join('');
@@ -194,11 +195,51 @@
   $('photos').addEventListener('click',function(e){
     var b=e.target.closest('[data-act]');if(!b)return;
     var i=+b.closest('.ph').dataset.i,act=b.dataset.act,c=photos[cover];
+    if(act==='crop'){openCrop(i);return}
     if(act==='cover')cover=i;
     else if(act==='del'){photos.splice(i,1);if(i===cover)cover=0;else cover=photos.indexOf(c)}
     else{var j=i+(act==='left'?-1:1),t=photos[i];photos[i]=photos[j];photos[j]=t;cover=photos.indexOf(c)}
     dirty=true;renderPhotos();
   });
+
+  // ---------- Crop focus: which part of a photo stays visible where the site crops it ----------
+  var cropI=-1,cfx=50,cfy=50,cropDrag=false;
+  var cropArea=$('crop-area'),cropImg=$('crop-img'),cropDot=$('crop-dot'),cropPrev=$('crop-preview');
+  function openCrop(i){
+    var p=photos[i];cropI=i;
+    cfx=p.fx!=null?p.fx:50;cfy=p.fy!=null?p.fy:50;
+    cropImg.src=p.src;cropPrev.src=p.sm||p.src;
+    drawCrop();$('crop-modal').hidden=false;cropArea.focus();
+  }
+  function drawCrop(){
+    cropDot.style.left=cfx+'%';cropDot.style.top=cfy+'%';
+    cropPrev.style.objectPosition=cfx+'% '+cfy+'%';
+    $('crop-val').textContent=Math.round(cfx)+'% across, '+Math.round(cfy)+'% down';
+  }
+  function cropAt(e){
+    var r=cropImg.getBoundingClientRect();
+    cfx=Math.round(Math.min(100,Math.max(0,(e.clientX-r.left)/r.width*100)));
+    cfy=Math.round(Math.min(100,Math.max(0,(e.clientY-r.top)/r.height*100)));
+    drawCrop();
+  }
+  cropArea.addEventListener('pointerdown',function(e){cropDrag=true;cropArea.setPointerCapture(e.pointerId);cropAt(e)});
+  cropArea.addEventListener('pointermove',function(e){if(cropDrag)cropAt(e)});
+  cropArea.addEventListener('pointerup',function(){cropDrag=false});
+  cropArea.addEventListener('keydown',function(e){
+    var k={ArrowLeft:[-2,0],ArrowRight:[2,0],ArrowUp:[0,-2],ArrowDown:[0,2]}[e.key];
+    if(!k)return;e.preventDefault();
+    cfx=Math.min(100,Math.max(0,cfx+k[0]));cfy=Math.min(100,Math.max(0,cfy+k[1]));drawCrop();
+  });
+  function closeCrop(){$('crop-modal').hidden=true;cropI=-1}
+  $('crop-reset').addEventListener('click',function(){cfx=50;cfy=50;drawCrop()});
+  $('crop-cancel').addEventListener('click',closeCrop);
+  $('crop-apply').addEventListener('click',function(){
+    var p=photos[cropI];
+    if(cfx===50&&cfy===50){delete p.fx;delete p.fy}else{p.fx=cfx;p.fy=cfy}
+    dirty=true;closeCrop();renderPhotos();
+    msg($('upload-msg'),'Crop updated. Remember to save.','ok');
+  });
+  addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('crop-modal').hidden)closeCrop()});
 
   // Resize in the browser before upload: 1600px for the gallery, 640px for cards
   function loadBitmap(file){

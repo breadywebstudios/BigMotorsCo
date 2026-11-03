@@ -140,6 +140,31 @@
   </div>
 </main>
 
+<!-- Crop focus -->
+<div class="modal" id="crop-modal" role="dialog" aria-modal="true" aria-labelledby="crop-title" hidden>
+  <div class="modal-box">
+    <h2 id="crop-title">Adjust crop</h2>
+    <p class="muted">Click or drag on the photo to choose the part that must stay visible. Arrow keys nudge it.</p>
+    <div class="crop-body">
+      <div class="crop-area" id="crop-area" tabindex="0" aria-label="Crop focus point. Use arrow keys to move it.">
+        <img id="crop-img" alt="" draggable="false">
+        <span class="crop-dot" id="crop-dot" aria-hidden="true"></span>
+      </div>
+      <div class="crop-side">
+        <div class="crop-label">How it shows on cards and in the showroom</div>
+        <img class="crop-preview" id="crop-preview" alt="">
+        <p class="mono" id="crop-val"></p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="link" type="button" id="crop-reset">Reset to centre</button>
+      <span></span>
+      <button class="btn ghost" type="button" id="crop-cancel">Cancel</button>
+      <button class="btn red" type="button" id="crop-apply">Apply</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>

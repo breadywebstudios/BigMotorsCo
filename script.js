@@ -94,7 +94,7 @@
   function cardHTML(c){
     var manual=/manual/i.test(c.gearbox);
     return '<a class="car tilt" data-wipe href="car.html?c='+c.id+'">'+
-      '<div class="ph"><img src="'+carImg(c,c.cover,true)+'" alt="'+esc(c.year+' '+c.make+' '+c.model)+'" loading="lazy">'+
+      '<div class="ph"><img src="'+carImg(c,c.cover,true)+'" alt="'+esc(c.year+' '+c.make+' '+c.model)+'" loading="lazy" style="'+carPos(c.photos[c.cover])+'">'+
       '<span class="yr">'+c.year+'</span>'+(manual?'<span class="tag">Manual</span>':'')+
       '<span class="select"><svg class="select-icon" viewBox="0 0 86 24" aria-hidden="true"><g class="sl"><path d="M64 9h20M68 13h16M66 17h12"/></g><path class="bd" d="M2 17.5c0-2.6 2-4.4 6.2-5L19 11c3.6-3.4 9.6-6 18-6 7.2 0 12.6 2.4 16.6 5.6l5.6.8c2.4.4 3.8 2 3.8 4.4V19H2z"/><path class="wn" d="M23 11.2c3-2.4 7.4-4 13.6-4h1.2l1.4 4.6zM42 7.4c4 .4 7.4 1.8 9.6 3.8l-8 .6z"/><circle class="wh" cx="14" cy="19" r="4.2"/><circle class="wh" cx="51" cy="19" r="4.2"/><circle class="rm" cx="14" cy="19" r="1.6"/><circle class="rm" cx="51" cy="19" r="1.6"/></svg><span>View Car</span></span></div>'+
       '<div class="body"><div class="mk">'+esc(c.make)+'</div><h3>'+esc(c.model)+'</h3><div class="sub">'+esc(c.sub)+'</div>'+
@@ -232,7 +232,7 @@
     srN=ph.length;srStep=360/srN;srFront=-1;
     var alt=car.year+' '+car.make+' '+car.model;
     srRing.innerHTML=ph.map(function(p,i){
-      return '<figure class="sr-item"><img src="'+esc(p.sm||p.src)+'" data-full="'+esc(p.src)+'" alt="'+esc(alt+', photo '+(i+1))+'" draggable="false" decoding="async"></figure>';
+      return '<figure class="sr-item"><img src="'+esc(p.sm||p.src)+'" data-full="'+esc(p.src)+'" alt="'+esc(alt+', photo '+(i+1))+'" draggable="false" decoding="async" style="'+carPos(p)+'"></figure>';
     }).join('');
     srItems=[].slice.call(srRing.children);
     layoutRing();
@@ -354,7 +354,7 @@
     if(/^https?:/.test(location.href))msg+=' '+location.href;
     $('panel').innerHTML=
       '<div><div class="kicker">'+esc(car.make)+'</div><h1>'+esc(car.model)+'</h1><p class="sub">'+car.year+' · '+esc(car.sub)+'</p></div>'+
-      '<div class="poa"><small>Price</small>On request</div>'+
+      (car.price!=null?'<div class="price"><small>Offer Price:</small>'+fmtAED(car.price)+'</div>':'<div class="poa"><small>Price</small>On request</div>')+
       '<dl class="spec-list">'+specs.map(function(s){return '<div><dt>'+s[0]+'</dt><dd>'+esc(s[1])+'</dd></div>'}).join('')+'</dl>'+
       '<a class="btn red nitro" href="https://wa.me/'+WA+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener"><span>Enquire on WhatsApp</span> <span class="arr">→</span></a>'+
       '<p class="fine">Viewing in Dubai by appointment</p>';
@@ -375,7 +375,7 @@
     var n=car.photos.length,cur=car.cover,main=$('main-img'),thumbs=$('thumbs'),lb=$('lightbox'),lbImg=$('lb-img');
     var alt=car.year+' '+car.make+' '+car.model;
     thumbs.innerHTML=Array.from({length:n},function(_,i){
-      return '<button type="button" data-i="'+i+'" aria-label="Photo '+(i+1)+'"><img src="'+carImg(car,i,true)+'" alt="" loading="lazy"></button>';
+      return '<button type="button" data-i="'+i+'" aria-label="Photo '+(i+1)+'"><img src="'+carImg(car,i,true)+'" alt="" loading="lazy" style="'+carPos(car.photos[i])+'"></button>';
     }).join('');
     var show=function(i,dir){
       cur=(i+n)%n;
