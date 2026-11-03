@@ -96,7 +96,7 @@
     return '<a class="car tilt" data-wipe href="car.html?c='+c.id+'">'+
       '<div class="ph"><img src="'+carImg(c,c.cover,true)+'" alt="'+esc(c.year+' '+c.make+' '+c.model)+'" loading="lazy">'+
       '<span class="yr">'+c.year+'</span>'+(manual?'<span class="tag">Manual</span>':'')+
-      '<span class="select">Select ▶</span></div>'+
+      '<span class="select">View car ▶</span></div>'+
       '<div class="body"><div class="mk">'+esc(c.make)+'</div><h3>'+esc(c.model)+'</h3><div class="sub">'+esc(c.sub)+'</div>'+
       '<div class="specs"><span>'+c.year+'</span><span>'+fmtMiles(c)+'</span><span>'+esc(c.gearbox)+'</span></div></div></a>';
   }
@@ -104,6 +104,134 @@
     container.innerHTML=list.length?list.map(cardHTML).join(''):'<p class="empty">No cars match. Try another filter.</p>';
     container.querySelectorAll('.car').forEach(function(el){bindTilt(el);observe(el)});
   }
+
+  // ---------- Showroom: "View car" opens a 3D carousel of the car's photos ----------
+  var sr=null,srRing,srItems=[],srCar=null,srN=0,srStep=0,srR=0,srAngle=0,srTarget=0,srFront=-1,srRaf=0,srLast=0,srOpener=null,srDrag=null;
+  var SR_MAX=12;
+  function buildShowroom(){
+    sr=document.createElement('div');
+    sr.className='showroom';sr.hidden=true;
+    sr.setAttribute('role','dialog');sr.setAttribute('aria-modal','true');sr.setAttribute('aria-labelledby','sr-title');
+    sr.innerHTML='<div class="sr-floor" aria-hidden="true"></div>'+
+      '<header class="sr-head"><div><div class="kicker" id="sr-make"></div><h2 id="sr-title"></h2><p id="sr-sub"></p></div>'+
+      '<button class="sr-close" type="button" aria-label="Close">✕</button></header>'+
+      '<div class="sr-scene"><div class="sr-ring"></div></div>'+
+      '<footer class="sr-foot"><div class="sr-nav">'+
+        '<button class="sr-btn" type="button" data-dir="-1" aria-label="Previous photo">‹</button>'+
+        '<span class="sr-count" id="sr-count" aria-live="polite"></span>'+
+        '<button class="sr-btn" type="button" data-dir="1" aria-label="Next photo">›</button>'+
+        '<span class="sr-hint">Drag or use ← →</span></div>'+
+        '<div class="sr-specs" id="sr-specs"></div>'+
+        '<a class="btn red nitro" id="sr-details"><span>Full details</span> <span class="arr">→</span></a></footer>';
+    document.body.appendChild(sr);
+    srRing=sr.querySelector('.sr-ring');
+    var scene=sr.querySelector('.sr-scene');
+    sr.querySelector('.sr-close').addEventListener('click',closeShowroom);
+    sr.querySelectorAll('.sr-btn').forEach(function(b){b.addEventListener('click',function(){turn(+b.dataset.dir)})});
+    scene.addEventListener('pointerdown',function(e){
+      srDrag={x:e.clientX,a:srTarget,moved:0,target:e.target};
+      scene.setPointerCapture(e.pointerId);scene.classList.add('dragging');
+    });
+    scene.addEventListener('pointermove',function(e){
+      if(!srDrag)return;
+      var dx=e.clientX-srDrag.x;srDrag.moved=Math.max(srDrag.moved,Math.abs(dx));
+      srTarget=srDrag.a+dx*0.28;srLast=performance.now();
+    });
+    var endDrag=function(){
+      if(!srDrag)return;
+      var d=srDrag;srDrag=null;scene.classList.remove('dragging');
+      if(d.moved<6){
+        var fig=d.target.closest&&d.target.closest('.sr-item');
+        if(fig){var k=srItems.indexOf(fig);if(k===srFront)location.href=$('sr-details').href;else goTo(k)}
+      }
+      srTarget=Math.round(srTarget/srStep)*srStep;srLast=performance.now();
+    };
+    scene.addEventListener('pointerup',endDrag);
+    scene.addEventListener('pointercancel',endDrag);
+    var wheelT=0;
+    scene.addEventListener('wheel',function(e){
+      var d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+      if(Math.abs(d)<8)return;
+      e.preventDefault();
+      var now=performance.now();if(now-wheelT<350)return;wheelT=now;turn(d>0?1:-1);
+    },{passive:false});
+    addEventListener('keydown',function(e){
+      if(sr.hidden)return;
+      if(e.key==='Escape')closeShowroom();
+      else if(e.key==='ArrowRight'){e.preventDefault();turn(1)}
+      else if(e.key==='ArrowLeft'){e.preventDefault();turn(-1)}
+      else if(e.key==='Tab'){
+        var f=[].slice.call(sr.querySelectorAll('button,a[href]')),i=f.indexOf(document.activeElement);
+        if(e.shiftKey&&i<=0){e.preventDefault();f[f.length-1].focus()}
+        else if(!e.shiftKey&&i===f.length-1){e.preventDefault();f[0].focus()}
+      }
+    });
+    addEventListener('resize',function(){if(!sr.hidden)layoutRing()});
+  }
+  function layoutRing(){
+    var w=Math.max(200,Math.min(innerWidth*(innerWidth<700?0.78:0.5),620,(innerHeight-260)*1.5));
+    srR=srN<3?w*0.7:Math.round((w/2)/Math.tan(Math.PI/srN))+28;
+    srRing.style.setProperty('--w',w+'px');
+    srItems.forEach(function(f,i){f.style.transform='rotateY('+(i*srStep)+'deg) translateZ('+srR+'px)'});
+  }
+  function turn(dir){srTarget=Math.round(srTarget/srStep)*srStep-dir*srStep;srLast=performance.now()}
+  function goTo(k){var d=((k-srFront)%srN+srN)%srN;if(d>srN/2)d-=srN;turn(d)}
+  function srTick(now){
+    srAngle+=(srTarget-srAngle)*(reduce?1:0.08);
+    srRing.style.transform='translateZ('+(-srR)+'px) rotateY('+srAngle.toFixed(2)+'deg)';
+    for(var i=0;i<srN;i++){
+      var rel=((i*srStep+srAngle)%360+540)%360-180;
+      srItems[i].style.opacity=(1-Math.min(Math.abs(rel),160)/160*0.8).toFixed(2);
+    }
+    var f=((Math.round(-srTarget/srStep)%srN)+srN)%srN;
+    if(f!==srFront){
+      if(srItems[srFront])srItems[srFront].classList.remove('front');
+      srFront=f;srItems[f].classList.add('front');
+      var img=srItems[f].querySelector('img');
+      if(img.dataset.full&&img.getAttribute('src')!==img.dataset.full)img.src=img.dataset.full;
+      $('sr-count').textContent=String(f+1).padStart(2,'0')+' / '+String(srN).padStart(2,'0');
+    }
+    if(!reduce&&!srDrag&&now-srLast>3800)turn(1);
+    srRaf=requestAnimationFrame(srTick);
+  }
+  function openShowroom(car,opener){
+    if(!sr)buildShowroom();
+    srCar=car;srOpener=opener;
+    var ph=car.photos.slice(0,SR_MAX),cover=Math.min(car.cover,ph.length-1);
+    srN=ph.length;srStep=360/srN;srFront=-1;
+    var alt=car.year+' '+car.make+' '+car.model;
+    srRing.innerHTML=ph.map(function(p,i){
+      return '<figure class="sr-item"><img src="'+esc(p.sm||p.src)+'" data-full="'+esc(p.src)+'" alt="'+esc(alt+', photo '+(i+1))+'" draggable="false"></figure>';
+    }).join('');
+    srItems=[].slice.call(srRing.children);
+    layoutRing();
+    $('sr-make').textContent=car.make;
+    $('sr-title').textContent=car.model;
+    $('sr-sub').textContent=car.year+(car.sub?' · '+car.sub:'');
+    $('sr-specs').innerHTML=[car.year,fmtMiles(car),car.gearbox,car.engine].filter(Boolean).map(function(s){return '<span>'+esc(s)+'</span>'}).join('');
+    $('sr-details').href='car.html?c='+encodeURIComponent(car.id);
+    srTarget=-cover*srStep;
+    srAngle=reduce?srTarget:srTarget+300; // spin in
+    srLast=performance.now()+1200;
+    sr.hidden=false;document.body.style.overflow='hidden';
+    requestAnimationFrame(function(){sr.classList.add('open')});
+    cancelAnimationFrame(srRaf);srRaf=requestAnimationFrame(srTick);
+    sr.querySelector('.sr-close').focus();
+  }
+  function closeShowroom(){
+    sr.classList.remove('open');
+    setTimeout(function(){sr.hidden=true;cancelAnimationFrame(srRaf);srRing.innerHTML='';srItems=[]},reduce?0:350);
+    document.body.style.overflow='';
+    if(srOpener)srOpener.focus({preventScroll:true});
+  }
+  document.addEventListener('click',function(e){
+    var a=e.target.closest&&e.target.closest('a.car');
+    if(!a||e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+    var id=new URL(a.href,location.href).searchParams.get('c');
+    var car=CARS.filter(function(c){return c.id===id})[0];
+    if(!car||!car.photos.length)return;
+    e.preventDefault();openShowroom(car,a);
+  });
 
   // Pages that need the inventory run once it has loaded from Supabase
   function initPages(){
@@ -242,6 +370,7 @@
     $('lb-close').onclick=closeLb;
     lb.addEventListener('click',function(e){if(e.target===lb)closeLb()});
     addEventListener('keydown',function(e){
+      if(sr&&!sr.hidden)return;
       if(e.key==='ArrowRight')show(cur+1,1);
       else if(e.key==='ArrowLeft')show(cur-1,-1);
       else if(e.key==='Escape'&&!lb.hidden)closeLb();
