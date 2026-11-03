@@ -7,6 +7,19 @@
   function $(id){return document.getElementById(id)}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 
+  // ---------- Hero video: YouTube id comes from bm_settings (set in admin), data-video is the fallback ----------
+  var heroFrame=document.querySelector('.hero-video iframe');
+  if(heroFrame){
+    var setHeroVideo=function(id){
+      if(!/^[\w-]{11}$/.test(id))id=heroFrame.dataset.video;
+      heroFrame.src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&mute=1&loop=1&playlist='+id+'&controls=0&playsinline=1&rel=0&disablekb=1&iv_load_policy=3&fs=0';
+    };
+    fetch(SB_URL+'/rest/v1/bm_settings?key=eq.hero_video&select=value',{headers:{apikey:SB_KEY}})
+      .then(function(r){return r.ok?r.json():[]})
+      .then(function(rows){setHeroVideo(rows[0]?rows[0].value:'')})
+      .catch(function(){setHeroVideo('')});
+  }
+
   // ---------- WhatsApp test mode ----------
   // ?test=1 sends every WhatsApp link to the test number for this browser tab; ?test=0 switches back
   var qs=new URLSearchParams(location.search),testMode=false;

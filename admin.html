@@ -69,6 +69,19 @@
     </table>
   </div>
 
+  <section class="card hero-set">
+    <h2>Hero video</h2>
+    <p class="muted">Paste a YouTube link. It plays muted and on loop at the top of the home page. Landscape videos fill the space best.</p>
+    <div class="hero-row">
+      <a class="hero-thumb" id="hero-thumb" target="_blank" rel="noopener" hidden><img alt="Current hero video"></a>
+      <form id="hero-form" class="hero-form">
+        <input name="url" type="text" inputmode="url" placeholder="https://youtu.be/…" required>
+        <button class="btn red sm" type="submit">Save video</button>
+      </form>
+    </div>
+    <p class="msg" id="hero-msg"></p>
+  </section>
+
   <section class="card admins">
     <h2>Admins</h2>
     <p class="muted">People who can sign in here. They sign in with their own email and password.</p>

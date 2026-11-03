@@ -31,7 +31,7 @@
     if(!$('edit-view').hidden||!$('reset-view').hidden)return;
     sb.rpc('bm_is_admin').then(function(r){
       if(r.error||!r.data){show('denied-view');return}
-      show('list-view');loadCars().then(function(ok){if(ok)cleanStorage()});loadAdmins();
+      show('list-view');loadCars().then(function(ok){if(ok)cleanStorage()});loadAdmins();loadHeroVideo();
     });
   }
 
@@ -144,6 +144,38 @@
     sb.from('bm_admins').insert({email:email}).then(function(r){
       if(r.error){toast(r.error.code==='23505'?'Already an admin':r.error.message,true);return}
       e.target.reset();toast('Admin added. They can now sign in with that email.');loadAdmins();
+    });
+  });
+
+  // ---------- Hero video (bm_settings.hero_video holds a YouTube id) ----------
+  function ytId(text){
+    text=(text||'').trim();
+    if(/^[\w-]{11}$/.test(text))return text;
+    var m=text.match(/(?:youtu\.be\/|[?&]v=|\/(?:embed|shorts|live|v)\/)([\w-]{11})/);
+    return m?m[1]:null;
+  }
+  function showHeroVideo(id){
+    var a=$('hero-thumb');
+    a.hidden=!id;if(!id)return;
+    a.href='https://www.youtube.com/watch?v='+id;
+    a.querySelector('img').src='https://i.ytimg.com/vi/'+id+'/hqdefault.jpg';
+    $('hero-form').url.placeholder='https://youtu.be/'+id;
+  }
+  function loadHeroVideo(){
+    sb.from('bm_settings').select('value').eq('key','hero_video').maybeSingle().then(function(r){
+      if(!r.error)showHeroVideo(r.data&&r.data.value);
+    });
+  }
+  $('hero-form').addEventListener('submit',function(e){
+    e.preventDefault();
+    var f=e.target,id=ytId(f.url.value);
+    if(!id){msg($('hero-msg'),'That does not look like a YouTube link. Copy it from the Share button on YouTube.','err');return}
+    var btn=f.querySelector('button');busy(btn,true);msg($('hero-msg'),'Saving…');
+    sb.from('bm_settings').upsert({key:'hero_video',value:id,updated_at:new Date().toISOString()}).then(function(r){
+      busy(btn,false);
+      if(r.error){msg($('hero-msg'),r.error.message,'err');return}
+      f.reset();showHeroVideo(id);
+      msg($('hero-msg'),'Saved. The home page now plays this video (refresh it to see).','ok');
     });
   });
 
