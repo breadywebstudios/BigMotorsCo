@@ -96,7 +96,7 @@
     return '<a class="car tilt" data-wipe href="car.html?c='+c.id+'">'+
       '<div class="ph"><img src="'+carImg(c,c.cover,true)+'" alt="'+esc(c.year+' '+c.make+' '+c.model)+'" loading="lazy">'+
       '<span class="yr">'+c.year+'</span>'+(manual?'<span class="tag">Manual</span>':'')+
-      '<span class="select">View car ▶</span></div>'+
+      '<span class="select"><svg class="select-icon" viewBox="0 0 86 24" aria-hidden="true"><g class="sl"><path d="M64 9h20M68 13h16M66 17h12"/></g><path class="bd" d="M2 17.5c0-2.6 2-4.4 6.2-5L19 11c3.6-3.4 9.6-6 18-6 7.2 0 12.6 2.4 16.6 5.6l5.6.8c2.4.4 3.8 2 3.8 4.4V19H2z"/><path class="wn" d="M23 11.2c3-2.4 7.4-4 13.6-4h1.2l1.4 4.6zM42 7.4c4 .4 7.4 1.8 9.6 3.8l-8 .6z"/><circle class="wh" cx="14" cy="19" r="4.2"/><circle class="wh" cx="51" cy="19" r="4.2"/><circle class="rm" cx="14" cy="19" r="1.6"/><circle class="rm" cx="51" cy="19" r="1.6"/></svg><span>View Car</span></span></div>'+
       '<div class="body"><div class="mk">'+esc(c.make)+'</div><h3>'+esc(c.model)+'</h3><div class="sub">'+esc(c.sub)+'</div>'+
       '<div class="specs"><span>'+c.year+'</span><span>'+fmtMiles(c)+'</span><span>'+esc(c.gearbox)+'</span></div></div></a>';
   }
