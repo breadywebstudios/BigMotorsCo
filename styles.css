@@ -73,7 +73,9 @@ p{margin:0}
 /* cover-fit the 16:9 YouTube frame, slightly oversized to crop its edges */
 .hero-video iframe{position:absolute;top:50%;left:50%;width:max(100cqw,177.78cqh);height:max(100cqh,56.25cqw);border:0;transform:translate(-50%,-50%) scale(1.12)}
 .streaks{position:absolute;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none;mix-blend-mode:screen}
-.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(12,13,15,.3) 0%,rgba(12,13,15,.05) 35%,rgba(12,13,15,.65) 75%,rgba(12,13,15,.92) 100%),linear-gradient(90deg,rgba(12,13,15,.5),transparent 60%)}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(12,13,15,.12) 0%,transparent 30%,transparent 55%,rgba(12,13,15,.4) 82%,rgba(12,13,15,.75) 100%),linear-gradient(90deg,rgba(12,13,15,.32),transparent 50%)}
+.hero .wrap{text-shadow:0 2px 18px rgba(0,0,0,.45)}
+.hero h1 em{text-shadow:none}
 @keyframes settle{from{transform:scale(1.12);filter:brightness(.4) blur(4px)}to{transform:scale(1);filter:none}}
 .hero .wrap{position:relative;width:100%;padding-block:100px 64px}
 .hero h1{font-size:clamp(52px,9.5vw,148px);font-weight:900;font-style:italic;font-stretch:120%;line-height:.86;letter-spacing:-.04em;text-transform:uppercase;margin:4px 0 30px}
