@@ -106,7 +106,7 @@
   }
 
   // ---------- Showroom: "View car" opens a 3D carousel of the car's photos ----------
-  var sr=null,srRing,srItems=[],srCar=null,srN=0,srStep=0,srR=0,srAngle=0,srTarget=0,srFront=-1,srRaf=0,srLast=0,srOpener=null,srDrag=null;
+  var sr=null,srRing,srItems=[],srCar=null,srN=0,srStep=0,srR=0,srAngle=0,srTarget=0,srFront=-1,srRaf=0,srOpener=null,srDrag=null;
   var SR_MAX=12;
   function buildShowroom(){
     sr=document.createElement('div');
@@ -135,7 +135,7 @@
     scene.addEventListener('pointermove',function(e){
       if(!srDrag)return;
       var dx=e.clientX-srDrag.x;srDrag.moved=Math.max(srDrag.moved,Math.abs(dx));
-      srTarget=srDrag.a+dx*0.28;srLast=performance.now();
+      srTarget=srDrag.a+dx*0.28;
     });
     var endDrag=function(){
       if(!srDrag)return;
@@ -144,7 +144,7 @@
         var fig=d.target.closest&&d.target.closest('.sr-item');
         if(fig){var k=srItems.indexOf(fig);if(k===srFront)location.href=$('sr-details').href;else goTo(k)}
       }
-      srTarget=Math.round(srTarget/srStep)*srStep;srLast=performance.now();
+      srTarget=Math.round(srTarget/srStep)*srStep;
     };
     scene.addEventListener('pointerup',endDrag);
     scene.addEventListener('pointercancel',endDrag);
@@ -174,9 +174,9 @@
     srRing.style.setProperty('--w',w+'px');
     srItems.forEach(function(f,i){f.style.transform='rotateY('+(i*srStep)+'deg) translateZ('+srR+'px)'});
   }
-  function turn(dir){srTarget=Math.round(srTarget/srStep)*srStep-dir*srStep;srLast=performance.now()}
+  function turn(dir){srTarget=Math.round(srTarget/srStep)*srStep-dir*srStep}
   function goTo(k){var d=((k-srFront)%srN+srN)%srN;if(d>srN/2)d-=srN;turn(d)}
-  function srTick(now){
+  function srTick(){
     srAngle+=(srTarget-srAngle)*(reduce?1:0.08);
     srRing.style.transform='translateZ('+(-srR)+'px) rotateY('+srAngle.toFixed(2)+'deg)';
     for(var i=0;i<srN;i++){
@@ -191,7 +191,6 @@
       if(img.dataset.full&&img.getAttribute('src')!==img.dataset.full)img.src=img.dataset.full;
       $('sr-count').textContent=String(f+1).padStart(2,'0')+' / '+String(srN).padStart(2,'0');
     }
-    if(!reduce&&!srDrag&&now-srLast>3800)turn(1);
     srRaf=requestAnimationFrame(srTick);
   }
   function openShowroom(car,opener){
@@ -211,8 +210,7 @@
     $('sr-specs').innerHTML=[car.year,fmtMiles(car),car.gearbox,car.engine].filter(Boolean).map(function(s){return '<span>'+esc(s)+'</span>'}).join('');
     $('sr-details').href='car.html?c='+encodeURIComponent(car.id);
     srTarget=-cover*srStep;
-    srAngle=reduce?srTarget:srTarget+300; // spin in
-    srLast=performance.now()+1200;
+    srAngle=reduce?srTarget:srTarget+90; // short settle-in turn
     sr.hidden=false;document.body.style.overflow='hidden';
     requestAnimationFrame(function(){sr.classList.add('open')});
     cancelAnimationFrame(srRaf);srRaf=requestAnimationFrame(srTick);
