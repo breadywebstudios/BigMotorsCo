@@ -513,7 +513,28 @@
     }
   }
 
-  var hud=$('hud'),hudFill=$('hud-fill'),hudSpeed=$('hud-speed'),hudNitro=$('hud-nitro'),shownKmh=0;
+  // Speedometer (desktop): 0-320 km/h dial with ticks, red zone, needle, digital readout, gear and page-progress bar
+  var hud=$('hud'),hudFill,hudSpeed,hudNitro,hudNeedle,hudGear,shownKmh=0,HUD_MAX=320;
+  function hudPt(v,r){var a=(-135+v/HUD_MAX*270)*Math.PI/180;return [(100+r*Math.sin(a)).toFixed(1),(100-r*Math.cos(a)).toFixed(1)]}
+  function hudArc(v0,v1,r){var p0=hudPt(v0,r),p1=hudPt(v1,r),big=(v1-v0)/HUD_MAX*270>180?1:0;return 'M'+p0[0]+' '+p0[1]+' A'+r+' '+r+' 0 '+big+' 1 '+p1[0]+' '+p1[1]}
+  if(hud){
+    var ticks='';
+    for(var v=0;v<=HUD_MAX;v+=10){
+      var major=v%40===0,a=hudPt(v,84),b=hudPt(v,major?70:77);
+      ticks+='<line class="'+(major?'mj':'mn')+(v>=260?' hot':'')+'" x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'"/>';
+      if(major){var t=hudPt(v,58);ticks+='<text class="lb" x="'+t[0]+'" y="'+t[1]+'">'+v+'</text>'}
+    }
+    hud.innerHTML='<svg viewBox="0 0 200 200">'+
+      '<path class="hud-track" d="'+hudArc(0,HUD_MAX,91)+'"/>'+
+      '<path class="hud-red" d="'+hudArc(260,HUD_MAX,91)+'"/>'+
+      '<path class="hud-fill" id="hud-fill" pathLength="100" d="'+hudArc(0,HUD_MAX,91)+'"/>'+
+      ticks+
+      '<g class="hud-needle" id="hud-needle"><path d="M100 26 L104 100 L96 100Z"/></g><circle class="hud-hub" cx="100" cy="100" r="9"/>'+
+      '<text class="hud-speed" id="hud-speed" x="100" y="146">000</text><text class="hud-unit" x="100" y="160">km/h</text>'+
+      '<text class="hud-gear" id="hud-gear" x="100" y="184">N</text></svg>'+
+      '<div class="hud-nitro"><i id="hud-nitro"></i></div>';
+    hudFill=$('hud-fill');hudSpeed=$('hud-speed');hudNitro=$('hud-nitro');hudNeedle=$('hud-needle');hudGear=$('hud-gear');
+  }
   var ticker=$('ticker'),tickX=0;
 
   function frame(){
@@ -521,17 +542,20 @@
     var y=scrollY,dy=Math.abs(y-lastY);lastY=y;
     vel+=(dy-vel)*.12;
     mouseBoost*=.96;
+    // The gauge only moves when the visitor scrolls, so it runs with reduced motion too
+    if(hud&&hudSpeed){
+      var kmh=Math.min(HUD_MAX,Math.round(vel*9));
+      shownKmh+=(kmh-shownKmh)*(reduce?1:.2);
+      var k=Math.round(shownKmh);
+      hudSpeed.textContent=('00'+k).slice(-3);
+      hudFill.style.strokeDasharray=(shownKmh/HUD_MAX*100).toFixed(1)+' 100';
+      hudNeedle.style.transform='rotate('+(-135+shownKmh/HUD_MAX*270).toFixed(1)+'deg)';
+      hudGear.textContent=k<3?'N':String(Math.min(6,1+Math.floor(k/55)));
+      var max=root.scrollHeight-innerHeight;
+      hudNitro.style.width=(max>0?y/max*100:0).toFixed(1)+'%';
+    }
     if(!reduce){
       if(ctx&&heroOn)drawStreaks(1+Math.min(vel,60)*.12+mouseBoost*2.5);
-      if(hud){
-        var kmh=Math.min(320,Math.round(vel*9));
-        shownKmh+=(kmh-shownKmh)*.2;
-        hudSpeed.textContent=('00'+Math.round(shownKmh)).slice(-3);
-        hudFill.style.strokeDasharray=(shownKmh/320*75).toFixed(1)+' 100';
-        hud.classList.toggle('on',y>innerHeight*.4);
-        var max=root.scrollHeight-innerHeight;
-        hudNitro.style.width=(max>0?y/max*100:0).toFixed(1)+'%';
-      }
       if(ticker){
         var half=ticker.scrollWidth/2;
         tickX-=.6+Math.min(vel,80)*.25;
