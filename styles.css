@@ -50,7 +50,7 @@ p{margin:0}
 .btn:hover .arr{transform:skewX(14deg) translateX(5px)}
 .nitro::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.55) 48%,transparent 62%);transform:translateX(-120%)}
 .nitro:hover::before{transform:translateX(120%);transition:transform .55s var(--ease)}
-.nitro:hover{transform:skewX(-14deg) translateX(3px);box-shadow:-10px 0 0 -2px rgba(255,170,40,.75),-20px 0 0 -5px rgba(211,17,43,.55),-30px 0 0 -8px rgba(211,17,43,.25),0 10px 30px -8px rgba(211,17,43,.6)}
+.nitro:hover{transform:skewX(-14deg) translateX(3px);box-shadow:-10px 0 0 -2px #009739,-20px 0 0 -5px #fff,-30px 0 0 -8px #000,-30px 0 0 -7px #fff,0 10px 30px -8px rgba(0,151,57,.45)}
 .nitro:active{transform:skewX(-14deg) translateX(6px) scale(.98)}
 
 /* ---------- Start lights intro ---------- */
