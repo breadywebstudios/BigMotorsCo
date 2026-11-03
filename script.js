@@ -10,14 +10,44 @@
   // ---------- Hero video: YouTube id comes from bm_settings (set in admin), data-video is the fallback ----------
   var heroFrame=document.querySelector('.hero-video iframe');
   if(heroFrame){
+    // The frame stays invisible (hero photo shows) until YouTube reports it is actually playing,
+    // so its title, play button and "More videos" overlays never sit over the hero text.
+    var heroWrap=heroFrame.parentNode;
     var setHeroVideo=function(id){
       if(!/^[\w-]{11}$/.test(id))id=heroFrame.dataset.video;
-      heroFrame.src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&mute=1&loop=1&playlist='+id+'&controls=0&playsinline=1&rel=0&disablekb=1&iv_load_policy=3&fs=0';
+      heroFrame.src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&mute=1&loop=1&playlist='+id+'&controls=0&playsinline=1&rel=0&disablekb=1&iv_load_policy=3&fs=0&enablejsapi=1&origin='+encodeURIComponent(location.origin);
+      var bind=function(){
+        new YT.Player(heroFrame,{events:{
+          onReady:function(e){e.target.mute();e.target.playVideo()},
+          onStateChange:function(e){
+            // 1 playing; 0 ended / 3 buffering keep the last frame (loop restart); -1, 2, 5 hide it
+            if(e.data===1)heroWrap.classList.add('playing');
+            else if(e.data!==0&&e.data!==3)heroWrap.classList.remove('playing');
+            if(e.data===0)e.target.playVideo();
+          }
+        }});
+      };
+      if(window.YT&&YT.Player)bind();
+      else{
+        var prev=window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady=function(){if(prev)prev();bind()};
+        var tag=document.createElement('script');tag.src='https://www.youtube.com/iframe_api';document.head.appendChild(tag);
+      }
     };
     fetch(SB_URL+'/rest/v1/bm_settings?key=eq.hero_video&select=value',{headers:{apikey:SB_KEY}})
       .then(function(r){return r.ok?r.json():[]})
       .then(function(rows){setHeroVideo(rows[0]?rows[0].value:'')})
       .catch(function(){setHeroVideo('')});
+  }
+
+  // ---------- Phone menu ----------
+  var nav=$('nav'),menuBtn=$('menu-btn');
+  if(nav&&menuBtn){
+    var setMenu=function(open){nav.classList.toggle('open',open);menuBtn.setAttribute('aria-expanded',open);menuBtn.setAttribute('aria-label',open?'Close menu':'Menu')};
+    menuBtn.addEventListener('click',function(){setMenu(!nav.classList.contains('open'))});
+    $('nav-menu').addEventListener('click',function(e){if(e.target.closest('a'))setMenu(false)});
+    document.addEventListener('click',function(e){if(nav.classList.contains('open')&&!nav.contains(e.target))setMenu(false)});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'&&nav.classList.contains('open')){setMenu(false);menuBtn.focus()}});
   }
 
   // ---------- WhatsApp test mode ----------
