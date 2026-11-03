@@ -155,9 +155,9 @@ p{margin:0}
 .select-icon .sl{stroke:#fff;stroke-width:1.6;stroke-linecap:round;fill:none;opacity:0}
 /* the car races in to the left as the tag slides in, trailing speed lines */
 .car:hover .select-icon,.car:focus-visible .select-icon{animation:carIn .6s cubic-bezier(.15,.8,.2,1) .05s both}
-.car:hover .select-icon .sl,.car:focus-visible .select-icon .sl{animation:speedLines .6s ease-out .05s both}
+.car:hover .select-icon .sl,.car:focus-visible .select-icon .sl{animation:speedLines 2s ease-out .05s both}
 @keyframes carIn{from{transform:translateX(38px)}to{transform:none}}
-@keyframes speedLines{0%{opacity:0;transform:translateX(-10px)}25%{opacity:.9}100%{opacity:0;transform:translateX(10px)}}
+@keyframes speedLines{0%{opacity:0;transform:translateX(-10px)}8%{opacity:.9}75%{opacity:.9}100%{opacity:0;transform:translateX(10px)}}
 .car:hover .select,.car:focus-visible .select{transform:none;background:var(--red);}
 /* touch screens: no hover; the tag shows after the first tap (.armed) */
 @media (hover:none){
@@ -165,7 +165,7 @@ p{margin:0}
   .car:hover .select-icon,.car:hover .select-icon .sl{animation:none}
   .car.armed .select{transform:none}
   .car.armed .select-icon{animation:carIn .6s cubic-bezier(.15,.8,.2,1) .05s both}
-  .car.armed .select-icon .sl{animation:speedLines .6s ease-out .05s both}
+  .car.armed .select-icon .sl{animation:speedLines 2s ease-out .05s both}
 }
 .car .body{padding:18px 20px 22px;display:grid;gap:6px;border-top:4px solid var(--ink);position:relative}
 .car .body::before{content:"";position:absolute;left:0;top:-4px;height:4px;width:100%;background:linear-gradient(90deg,#ef3340 0 25%,#009739 25% 50%,#fff 50% 75%,#000 75%);transform:scaleX(0);transform-origin:left;transition:transform .45s var(--ease)}
