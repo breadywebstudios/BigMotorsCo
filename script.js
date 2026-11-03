@@ -23,10 +23,6 @@
   }
   function waDisplay(){var n=WA;return '+'+n.slice(0,3)+' '+n.slice(3,5)+' '+n.slice(5,8)+' '+n.slice(8)}
 
-  // Hero video: some browsers block autoplay until play() is called explicitly
-  var hv=document.querySelector('.hero-video');
-  if(hv){hv.muted=true;var p=hv.play();if(p&&p.catch)p.catch(function(){})}
-
   // ---------- Start lights intro ----------
   function startHero(){if(hero)hero.classList.add('go')}
   var lights=$('lights');
@@ -254,8 +250,15 @@
     document.body.style.overflow='';
     if(srOpener)srOpener.focus({preventScroll:true});
   }
+  // on touch screens the first tap only shows the red tag; tapping the tag opens the car
+  var touch=window.matchMedia('(hover:none)');
   document.addEventListener('click',function(e){
     var a=e.target.closest&&e.target.closest('a.car');
+    if(touch.matches&&!(a&&e.target.closest('.select'))){
+      document.querySelectorAll('a.car.armed').forEach(function(c){if(c!==a)c.classList.remove('armed')});
+      if(a){e.preventDefault();a.classList.add('armed')}
+      return;
+    }
     if(!a||e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
     var id=new URL(a.href,location.href).searchParams.get('c');
     var car=CARS.filter(function(c){return c.id===id})[0];
