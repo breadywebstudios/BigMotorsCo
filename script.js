@@ -173,11 +173,16 @@
     });
     addEventListener('resize',function(){if(!sr.hidden)layoutRing()});
   }
+  // Desktop: photos stand on a 3D ring. Phones: a cover-flow fan (front photo flat, neighbours angled
+  // and stepped back) so the side photos stay on screen without passing through the front one
+  var srFlow=false,srW=0;
   function layoutRing(){
-    var w=Math.max(200,Math.min(innerWidth*(innerWidth<700?0.78:0.5),620,(innerHeight-260)*1.5));
-    srR=srN<3?w*0.7:Math.round((w/2)/Math.tan(Math.PI/srN))+28;
-    srRing.style.setProperty('--w',w+'px');
-    srItems.forEach(function(f,i){f.style.transform='rotateY('+(i*srStep)+'deg) translateZ('+srR+'px)'});
+    srFlow=innerWidth<700;
+    srW=Math.max(180,Math.min(innerWidth*(srFlow?0.66:0.5),620,(innerHeight-260)*1.5));
+    srR=srFlow?0:srN<3?srW*0.7:Math.round((srW/2)/Math.tan(Math.PI/srN))+28;
+    srRing.style.setProperty('--w',srW+'px');
+    if(!srFlow)srItems.forEach(function(f,i){f.style.transform='rotateY('+(i*srStep)+'deg) translateZ('+srR+'px)'});
+    if(srItems.length)srRender();
   }
   function spinTo(angle,dur){
     srFrom=srAngle;srTarget=angle;srT0=performance.now();srDur=reduce?0:dur;
@@ -194,10 +199,22 @@
     if(t<1)srRaf=requestAnimationFrame(srTick);
   }
   function srRender(){
-    srRing.style.transform='translate3d(0,0,'+(-srR)+'px) rotateY('+srAngle.toFixed(2)+'deg)';
-    for(var i=0;i<srN;i++){
-      var rel=((i*srStep+srAngle)%360+540)%360-180;
-      srItems[i].style.opacity=(1-Math.min(Math.abs(rel),160)/160*0.8).toFixed(2);
+    if(srFlow){
+      srRing.style.transform='rotateX(-4deg)';
+      var pos=-srAngle/srStep;
+      for(var j=0;j<srN;j++){
+        var d=((j-pos)%srN+srN*1.5)%srN-srN/2,a=Math.abs(d),s=d<0?-1:1;
+        var near=Math.min(a,1),far=Math.max(Math.min(a,3)-1,0);
+        var x=s*(near*0.56+far*0.18)*srW,z=-(near*0.62+far*0.3)*srW;
+        srItems[j].style.transform='translate3d('+x.toFixed(1)+'px,0,'+z.toFixed(1)+'px) rotateY('+(s*near*52).toFixed(1)+'deg)';
+        srItems[j].style.opacity=a>2.6?'0':(1-a*0.28).toFixed(2);
+      }
+    }else{
+      srRing.style.transform='translate3d(0,0,'+(-srR)+'px) rotateY('+srAngle.toFixed(2)+'deg)';
+      for(var i=0;i<srN;i++){
+        var rel=((i*srStep+srAngle)%360+540)%360-180;
+        srItems[i].style.opacity=(1-Math.min(Math.abs(rel),160)/160*0.8).toFixed(2);
+      }
     }
     var f=((Math.round(-srTarget/srStep)%srN)+srN)%srN;
     if(f!==srFront){

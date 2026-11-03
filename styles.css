@@ -437,7 +437,7 @@ footer .base .admin-link:hover{opacity:1}
 .sr-hint{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ash);margin-left:8px}
 .sr-specs{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:#c9ccd2}
 .sr-specs span+span::before{content:"";display:inline-block;width:8px;height:3px;background:var(--red);transform:skewX(-30deg);margin-right:14px;vertical-align:middle}
-@media (max-width:700px){.sr-hint{display:none}.sr-specs{order:3;width:100%}}
+@media (max-width:700px){.sr-hint{display:none}.sr-specs{order:3;width:100%}.sr-scene{perspective:800px;perspective-origin:50% 40%}.sr-item{border-radius:14px}}
 
 /* ---------- Test mode badge ---------- */
 .test-badge{position:fixed;left:16px;bottom:16px;z-index:80;font-family:var(--f-mono);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#111;background:#ffd400;padding:8px 12px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
