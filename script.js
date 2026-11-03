@@ -2,10 +2,26 @@
   var root=document.documentElement;
   var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   var finePointer=matchMedia('(hover: hover) and (pointer: fine)').matches;
-  var CARS=window.CARS||[];
+  var CARS=[];
   var hero=document.getElementById('hero');
   function $(id){return document.getElementById(id)}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+  // ---------- WhatsApp test mode ----------
+  // ?test=1 sends every WhatsApp link to the test number for this browser tab; ?test=0 switches back
+  var qs=new URLSearchParams(location.search),testMode=false;
+  try{
+    if(qs.has('test'))sessionStorage.setItem('bm-test',qs.get('test')==='0'?'':'1');
+    testMode=!!sessionStorage.getItem('bm-test');
+  }catch(e){testMode=qs.get('test')==='1'}
+  if(testMode&&window.WA_TEST){
+    window.WA=WA_TEST;
+    document.querySelectorAll('a[href^="https://wa.me/"]').forEach(function(a){a.href=a.href.replace(/wa\.me\/\d+/,'wa.me/'+WA)});
+    var tb=document.createElement('div');tb.className='test-badge';
+    tb.innerHTML='Test mode · WhatsApp goes to '+waDisplay()+' <a href="?test=0">Exit</a>';
+    document.body.appendChild(tb);
+  }
+  function waDisplay(){var n=WA;return '+'+n.slice(0,3)+' '+n.slice(3,5)+' '+n.slice(5,8)+' '+n.slice(8)}
 
   // Hero video: some browsers block autoplay until play() is called explicitly
   var hv=document.querySelector('.hero-video');
@@ -34,13 +50,25 @@
     requestAnimationFrame(startHero);
   }
 
-  // ---------- Reveal + slash-wipe ----------
+  // ---------- Reveal + slash-wipe + count-up ----------
+  function countUp(el){
+    var target=+el.getAttribute('data-count');
+    if(reduce){el.textContent=target;return}
+    var from=target===0?999:0,t0=null;
+    (function step(t){
+      if(!t0)t0=t;
+      var k=Math.min(1,(t-t0)/1400);
+      el.textContent=Math.round(from+(target-from)*(1-Math.pow(1-k,4)));
+      if(k<1)requestAnimationFrame(step);
+    })(performance.now());
+  }
   var io='IntersectionObserver' in window?new IntersectionObserver(function(es){
     var batch=0;
     es.forEach(function(e){
       if(!e.isIntersecting)return;
       if(!reduce)e.target.style.transitionDelay=(batch++*0.08)+'s';
       e.target.classList.add('in');
+      e.target.querySelectorAll('[data-count]').forEach(countUp);
       io.unobserve(e.target);
     });
   },{threshold:.12,rootMargin:'0px 0px -5% 0px'}):null;
@@ -60,13 +88,15 @@
     el.addEventListener('pointerleave',function(){el.style.transition='transform .6s cubic-bezier(.2,.8,.2,1), box-shadow .3s';el.style.transform=''});
   }
 
+  document.querySelectorAll('#about .tilt').forEach(bindTilt);
+
   // ---------- Car card ----------
   function cardHTML(c){
     var manual=/manual/i.test(c.gearbox);
     return '<a class="car tilt" data-wipe href="car.html?c='+c.id+'">'+
       '<div class="ph"><img src="'+carImg(c,c.cover,true)+'" alt="'+esc(c.year+' '+c.make+' '+c.model)+'" loading="lazy">'+
       '<span class="yr">'+c.year+'</span>'+(manual?'<span class="tag">Manual</span>':'')+
-      '<span class="price">'+fmtPrice(c.price)+'</span><span class="select">Select ▶</span></div>'+
+      '<span class="select">Select ▶</span></div>'+
       '<div class="body"><div class="mk">'+esc(c.make)+'</div><h3>'+esc(c.model)+'</h3><div class="sub">'+esc(c.sub)+'</div>'+
       '<div class="specs"><span>'+c.year+'</span><span>'+fmtMiles(c)+'</span><span>'+esc(c.gearbox)+'</span></div></div></a>';
   }
@@ -74,6 +104,9 @@
     container.innerHTML=list.length?list.map(cardHTML).join(''):'<p class="empty">No cars match. Try another filter.</p>';
     container.querySelectorAll('.car').forEach(function(el){bindTilt(el);observe(el)});
   }
+
+  // Pages that need the inventory run once it has loaded from Supabase
+  function initPages(){
 
   // ---------- Catalog page ----------
   var grid=$('grid');
@@ -90,8 +123,6 @@
     ];
     var SORTS={
       featured:function(){return 0},
-      'price-asc':function(a,b){return a.price-b.price},
-      'price-desc':function(a,b){return b.price-a.price},
       'year-asc':function(a,b){return a.year-b.year},
       'year-desc':function(a,b){return b.year-a.year}
     };
@@ -102,6 +133,7 @@
       var n=CARS.filter(f.f).length;
       return n?'<button class="chip" type="button" data-k="'+f.k+'" aria-pressed="false"><span>'+f.label+'</span><small>'+n+'</small></button>':'';
     }).join('');
+    if(!SORTS[state.s])state.s='featured';
     sortSel.value=state.s;
     var render=function(){
       var f=FILTERS.filter(function(x){return x.k===state.f})[0]||FILTERS[0];
@@ -117,22 +149,54 @@
     var sc=$('stock-count');if(sc)sc.textContent=CARS.length+' in stock';
   }
 
+  // ---------- Enquiry form: builds the message and opens WhatsApp ----------
+  var waForm=$('wa-form');
+  if(waForm){
+    var topic=$('wa-topic'),note=$('wa-note');
+    topic.innerHTML='<option>General enquiry</option><option>Selling my car</option><option>Booking a viewing</option>'+
+      '<optgroup label="Cars in stock">'+CARS.map(function(c){
+        return '<option value="'+esc(c.year+' '+c.make+' '+c.model)+'">'+esc(c.year+' '+c.make+' '+c.model)+'</option>';
+      }).join('')+'</optgroup>';
+    waForm.addEventListener('submit',function(e){
+      e.preventDefault();
+      var f=waForm.elements,name=f.name.value.trim(),phone=f.phone.value.trim(),msg=f.message.value.trim();
+      f.name.setAttribute('aria-invalid',String(!name));
+      if(!name){note.textContent='Please add your name.';note.className='form-note err';f.name.focus();return}
+      var lines=['Hello Big Motors,','','Name: '+name];
+      if(phone)lines.push('Phone: '+phone);
+      lines.push('Regarding: '+topic.value);
+      if(msg)lines.push('','Message: '+msg);
+      var a=document.createElement('a');
+      a.href='https://wa.me/'+WA+'?text='+encodeURIComponent(lines.join('\n'));
+      a.target='_blank';a.rel='noopener';
+      document.body.appendChild(a);a.click();a.remove();
+      note.innerHTML='WhatsApp should now be open with your message. If not, message <b>'+waDisplay()+'</b> directly.';
+      note.className='form-note ok';
+    });
+  }
+
   // ---------- Car detail page ----------
   var stage=$('stage');
   if(stage){
     var id=new URLSearchParams(location.search).get('c');
-    var idx=Math.max(0,CARS.findIndex(function(c){return c.id===id}));
+    var idx=CARS.findIndex(function(c){return c.id===id});
+    if(idx<0){
+      document.querySelector('.detail-grid').innerHTML='<div class="gone"><div class="kicker">Not available</div><h2>This car has left the garage.</h2><a class="btn red nitro" href="index.html#garage"><span>See what is in stock</span> <span class="arr">→</span></a></div>';
+      $('carnav').remove();
+      mountCards($('more'),CARS.slice(0,3));
+      return;
+    }
     var car=CARS[idx];
     document.title=car.year+' '+car.make+' '+car.model+' · Big Motors Co.';
     $('crumb').textContent=car.make;
 
     var specs=[['Year',car.year],['Mileage',fmtMiles(car)],['Gearbox',car.gearbox],['Engine',car.engine],['Power',car.power],['Drive',car.drive],['Colour',car.colour],['Spec',car.spec]]
       .filter(function(s){return s[1]});
-    var msg='Hello Big Motors, I am interested in the '+car.year+' '+car.make+' '+car.model+' ('+fmtPrice(car.price)+').';
+    var msg='Hello Big Motors, I am interested in the '+car.year+' '+car.make+' '+car.model+'.';
     if(/^https?:/.test(location.href))msg+=' '+location.href;
     $('panel').innerHTML=
       '<div><div class="kicker">'+esc(car.make)+'</div><h1>'+esc(car.model)+'</h1><p class="sub">'+car.year+' · '+esc(car.sub)+'</p></div>'+
-      '<div class="price"><small>Price</small>'+fmtPrice(car.price)+'</div>'+
+      '<div class="poa"><small>Price</small>On request</div>'+
       '<dl class="spec-list">'+specs.map(function(s){return '<div><dt>'+s[0]+'</dt><dd>'+esc(s[1])+'</dd></div>'}).join('')+'</dl>'+
       '<a class="btn red nitro" href="https://wa.me/'+WA+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener"><span>Enquire on WhatsApp</span> <span class="arr">→</span></a>'+
       '<p class="fine">Viewing in Dubai by appointment</p>';
@@ -150,14 +214,14 @@
     mountCards($('more'),others.slice(0,3));
 
     // Gallery
-    var n=car.photos,cur=car.cover-1,main=$('main-img'),thumbs=$('thumbs'),lb=$('lightbox'),lbImg=$('lb-img');
+    var n=car.photos.length,cur=car.cover,main=$('main-img'),thumbs=$('thumbs'),lb=$('lightbox'),lbImg=$('lb-img');
     var alt=car.year+' '+car.make+' '+car.model;
     thumbs.innerHTML=Array.from({length:n},function(_,i){
-      return '<button type="button" data-i="'+i+'" aria-label="Photo '+(i+1)+'"><img src="'+carImg(car,i+1,true)+'" alt="" loading="lazy"></button>';
+      return '<button type="button" data-i="'+i+'" aria-label="Photo '+(i+1)+'"><img src="'+carImg(car,i,true)+'" alt="" loading="lazy"></button>';
     }).join('');
     var show=function(i,dir){
       cur=(i+n)%n;
-      main.src=carImg(car,cur+1);main.alt=alt+', photo '+(cur+1);
+      main.src=carImg(car,cur);main.alt=alt+', photo '+(cur+1);
       lbImg.src=main.src;lbImg.alt=main.alt;
       $('g-count').textContent=$('lb-count').textContent=String(cur+1).padStart(2,'0')+' / '+String(n).padStart(2,'0');
       if(dir&&!reduce){main.classList.remove('swap-next','swap-prev');void main.offsetWidth;main.classList.add(dir>0?'swap-next':'swap-prev')}
@@ -165,7 +229,7 @@
         b.setAttribute('aria-current',String(j===cur));
         if(j===cur&&dir)b.scrollIntoView({block:'nearest',inline:'nearest',behavior:reduce?'auto':'smooth'});
       });
-      [cur+1,cur-1].forEach(function(j){new Image().src=carImg(car,((j+n)%n)+1)});
+      [cur+1,cur-1].forEach(function(j){new Image().src=carImg(car,(j+n)%n)});
     };
     show(cur);
     $('g-prev').onclick=$('lb-prev').onclick=function(e){e.stopPropagation();show(cur-1,-1)};
@@ -188,6 +252,16 @@
       el.addEventListener('touchend',function(e){if(sx===null)return;var dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>40)show(cur+(dx<0?1:-1),dx<0?1:-1);sx=null});
     });
   }
+
+  }
+
+  var grid0=$('grid'),stage0=$('stage');
+  if(grid0)grid0.innerHTML='<p class="empty">Loading the garage…</p>';
+  loadCars().then(function(list){CARS=list;initPages()},function(){
+    var msg='<p class="empty">We could not load the cars just now. Please refresh, or message us on WhatsApp.</p>';
+    if(grid0)grid0.innerHTML=msg;
+    if(stage0)$('panel').innerHTML=msg;
+  });
 
   // ---------- Speed: scroll velocity drives streaks, HUD and ticker ----------
   var lastY=scrollY,vel=0,mouseBoost=0;
