@@ -348,13 +348,13 @@
     document.title=car.year+' '+car.make+' '+car.model+' · Big Motors Co.';
     $('crumb').textContent=car.make;
 
-    var specs=[['Year',car.year],['Mileage',fmtMiles(car)],['Gearbox',car.gearbox],['Engine',car.engine],['Power',car.power],['Drive',car.drive],['Colour',car.colour],['Spec',car.spec]]
+    var specs=[['Offer Price',car.price!=null?fmtAED(car.price):'On request'],['Year',car.year],['Mileage',fmtMiles(car)],['Gearbox',car.gearbox],['Engine',car.engine],['Power',car.power],['Drive',car.drive],['Colour',car.colour],['Spec',car.spec]]
       .filter(function(s){return s[1]});
     var msg='Hello Big Motors, I am interested in the '+car.year+' '+car.make+' '+car.model+'.';
     if(/^https?:/.test(location.href))msg+=' '+location.href;
     $('panel').innerHTML=
       '<div><div class="kicker">'+esc(car.make)+'</div><h1>'+esc(car.model)+'</h1><p class="sub">'+car.year+' · '+esc(car.sub)+'</p></div>'+
-      (car.price!=null?'<div class="price"><small>Offer Price:</small>'+fmtAED(car.price)+'</div>':'<div class="poa"><small>Price</small>On request</div>')+
+      
       '<dl class="spec-list">'+specs.map(function(s){return '<div><dt>'+s[0]+'</dt><dd>'+esc(s[1])+'</dd></div>'}).join('')+'</dl>'+
       '<a class="btn red nitro" href="https://wa.me/'+WA+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener"><span>Enquire on WhatsApp</span> <span class="arr">→</span></a>'+
       '<p class="fine">Viewing in Dubai by appointment</p>';

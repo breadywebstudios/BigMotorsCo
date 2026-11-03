@@ -188,6 +188,7 @@
         '<div class="ph-tools"><button type="button" data-act="left" aria-label="Move left"'+(i===0?' disabled':'')+'>◀</button>'+
         '<button type="button" data-act="cover" aria-label="Make cover"'+(i===cover?' disabled':'')+'>★</button>'+
         '<button type="button" data-act="crop" aria-label="Adjust crop" title="Adjust crop">✥</button>'+
+        '<button type="button" data-act="zoom" aria-label="Zoom in and add as a new photo" title="Zoom in and add as a new photo">⊕</button>'+
         '<button type="button" data-act="right" aria-label="Move right"'+(i===photos.length-1?' disabled':'')+'>▶</button>'+
         '<button type="button" class="del" data-act="del" aria-label="Remove photo">✕</button></div></div>';
     }).join('');
@@ -196,6 +197,7 @@
     var b=e.target.closest('[data-act]');if(!b)return;
     var i=+b.closest('.ph').dataset.i,act=b.dataset.act,c=photos[cover];
     if(act==='crop'){openCrop(i);return}
+    if(act==='zoom'){openZoom(i);return}
     if(act==='cover')cover=i;
     else if(act==='del'){photos.splice(i,1);if(i===cover)cover=0;else cover=photos.indexOf(c)}
     else{var j=i+(act==='left'?-1:1),t=photos[i];photos[i]=photos[j];photos[j]=t;cover=photos.indexOf(c)}
@@ -253,6 +255,81 @@
     c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
     return new Promise(function(res){c.toBlob(res,'image/jpeg',q)});
   }
+  // ---------- Zoom: frame a detail of a photo and add it to the gallery as a new photo ----------
+  var zI=-1,zImg=new Image(),zScale=1,zBase=1,zX=0,zY=0,zDrag=null,zFW=0,zFH=0;
+  var zFrame=$('zoom-frame'),zView=$('zoom-img'),zRange=$('zoom-range');
+  zImg.crossOrigin='anonymous';
+  function openZoom(i){
+    zI=i;$('zoom-modal').hidden=false;$('zoom-add').disabled=true;
+    msg($('zoom-msg'),'Loading the full-size photo…');
+    zImg.onload=function(){
+      zView.src=zImg.src;
+      zFW=zFrame.clientWidth;zFH=zFrame.clientHeight;
+      zBase=Math.max(zFW/zImg.naturalWidth,zFH/zImg.naturalHeight);
+      zRange.value=1.5;setZoom(1.5,zFW/2,zFH/2,true);
+      $('zoom-add').disabled=false;msg($('zoom-msg'),'');
+    };
+    zImg.onerror=function(){msg($('zoom-msg'),'Could not load this photo.','err')};
+    zImg.src=photos[i].src;
+  }
+  function clampPan(){
+    var w=zImg.naturalWidth*zScale,h=zImg.naturalHeight*zScale;
+    zX=Math.min(0,Math.max(zFW-w,zX));zY=Math.min(0,Math.max(zFH-h,zY));
+  }
+  function drawZoom(){
+    zView.style.width=(zImg.naturalWidth*zScale)+'px';
+    zView.style.transform='translate('+zX+'px,'+zY+'px)';
+    $('zoom-val').textContent=(zScale/zBase).toFixed(1)+'×';
+  }
+  // Zoom around a point in the frame (cx, cy) so that point stays under the cursor
+  function setZoom(z,cx,cy,center){
+    var old=zScale,next=zBase*z;
+    if(center){zScale=next;zX=(zFW-zImg.naturalWidth*next)/2;zY=(zFH-zImg.naturalHeight*next)/2}
+    else{zX=cx-(cx-zX)*next/old;zY=cy-(cy-zY)*next/old;zScale=next}
+    clampPan();drawZoom();
+  }
+  zRange.addEventListener('input',function(){setZoom(+zRange.value,zFW/2,zFH/2)});
+  zFrame.addEventListener('wheel',function(e){
+    e.preventDefault();
+    var r=zFrame.getBoundingClientRect(),z=Math.min(5,Math.max(1,(zScale/zBase)*(e.deltaY<0?1.1:1/1.1)));
+    zRange.value=z;setZoom(z,e.clientX-r.left,e.clientY-r.top);
+  },{passive:false});
+  zFrame.addEventListener('pointerdown',function(e){zDrag={x:e.clientX-zX,y:e.clientY-zY};zFrame.setPointerCapture(e.pointerId)});
+  zFrame.addEventListener('pointermove',function(e){if(!zDrag)return;zX=e.clientX-zDrag.x;zY=e.clientY-zDrag.y;clampPan();drawZoom()});
+  zFrame.addEventListener('pointerup',function(){zDrag=null});
+  zFrame.addEventListener('keydown',function(e){
+    var k={ArrowLeft:[20,0],ArrowRight:[-20,0],ArrowUp:[0,20],ArrowDown:[0,-20]}[e.key];
+    if(e.key==='+'||e.key==='='){zRange.value=Math.min(5,+zRange.value+.25);setZoom(+zRange.value,zFW/2,zFH/2);return}
+    if(e.key==='-'){zRange.value=Math.max(1,+zRange.value-.25);setZoom(+zRange.value,zFW/2,zFH/2);return}
+    if(!k)return;e.preventDefault();zX+=k[0];zY+=k[1];clampPan();drawZoom();
+  });
+  function closeZoom(){$('zoom-modal').hidden=true;zI=-1;zView.removeAttribute('src')}
+  $('zoom-cancel').addEventListener('click',closeZoom);
+  addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('zoom-modal').hidden)closeZoom()});
+  function cutJpeg(sx,sy,sw,sh,outW,q){
+    var c=document.createElement('canvas');c.width=Math.round(outW);c.height=Math.round(outW*sh/sw);
+    var g=c.getContext('2d');g.imageSmoothingQuality='high';
+    g.drawImage(zImg,sx,sy,sw,sh,0,0,c.width,c.height);
+    return new Promise(function(res,rej){try{c.toBlob(function(b){b?res(b):rej(new Error('empty'))},'image/jpeg',q)}catch(err){rej(err)}});
+  }
+  $('zoom-add').addEventListener('click',function(){
+    var sx=-zX/zScale,sy=-zY/zScale,sw=zFW/zScale,sh=zFH/zScale;
+    var outW=Math.max(640,Math.min(1600,sw*1.5));
+    var btn=$('zoom-add');busy(btn,true);msg($('zoom-msg'),'Saving the zoomed photo…');
+    var base='cars/'+(form.slug.value||'new')+'/zoom-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);
+    Promise.all([cutJpeg(sx,sy,sw,sh,outW,.85),cutJpeg(sx,sy,sw,sh,640,.8)]).then(function(b){
+      return Promise.all([put(base+'.jpg',b[0]),put(base+'-sm.jpg',b[1])]);
+    }).then(function(urls){
+      var at=zI+1,c=photos[cover];
+      photos.splice(at,0,{src:urls[0],sm:urls[1]});cover=photos.indexOf(c);
+      dirty=true;busy(btn,false);closeZoom();renderPhotos();
+      msg($('upload-msg'),'Zoomed photo added after photo '+at+'. Remember to save.','ok');
+    },function(err){
+      busy(btn,false);console.error(err);
+      msg($('zoom-msg'),'Could not save the zoomed photo. '+(err&&err.name==='SecurityError'?'The browser blocked reading this image; open the admin from the website, not a local file.':(err&&err.message)||''),'err');
+    });
+  });
+
   function put(path,blob){
     return sb.storage.from(BUCKET).upload(path,blob,{contentType:'image/jpeg',cacheControl:'31536000',upsert:false}).then(function(r){
       if(r.error)throw r.error;
